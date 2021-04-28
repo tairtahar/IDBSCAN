@@ -1,15 +1,19 @@
 import utils
 import algorithms
 import numpy as np
+import evaluation
 
-data = utils.load_data('mushroom_arff.arff')
-# data.info()
-df = utils.categorial_handle(data, 2)
-
-eps = 2.5
-tau = eps
-minpts = 4
-
+if __name__=='main':
+    data = utils.load_data('mushroom_arff.arff')
+    # data.info()
+    df = utils.categorial_handle(data, 2)
+    true_class = df.iloc[:, -1]
+    df = df.drop(df.columns[-1], axis=1)
+    eps = 2.5
+    tau = eps
+    minpts = 4
+    predictions = algorithms.main_IDBSCAN(df, eps, minpts)
+    # rand_score = validate_with_ground_truth()
 ## uncomment the following lines for a full execution
 # S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
 # with open("IDBSCAN_idx.txt", "w") as f:
@@ -23,14 +27,14 @@ minpts = 4
 
 # for debug purposes - loading previously saved leader_idx's
 # leaders_df = pd.DataFrame()
-with open("IDBSCAN_idx.txt", "r") as f:
-    S = []
-    for line in f:
-        S.append(int(line.strip()))
-
-print("length original data = " + str(len(np.asarray(df))))
-print("length of S after IDBSCAN = " + str(len(S)))
-prediction = algorithms.DBSCAN(np.asarray(df.loc[S]), eps, minpts)
+# with open("IDBSCAN_idx.txt", "r") as f:
+#     S = []
+#     for line in f:
+#         S.append(int(line.strip()))
+#
+# print("length original data = " + str(len(np.asarray(df))))
+# print("length of S after IDBSCAN = " + str(len(S)))
+# prediction = algorithms.DBSCAN(np.asarray(df.loc[S]), eps, minpts)
 #
 # # FOR DEBUG ONLY
 # print(len(prediction))

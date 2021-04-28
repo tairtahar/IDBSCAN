@@ -82,8 +82,8 @@ def FFT_sampling(D, s, minpts):
     return list(set(fft_out))
 
 
-def IDBSCAN(data, eps, minpts):
-    L, F = leader_asterisk(data, eps, eps)
+def IDBSCAN(data, L, F, minpts):
+    # L, F = leader_asterisk(data, eps, eps)
     S = L.copy()  # make sure this is a copy of the L list
     followers_not_leaders = []
     for l_idx in range(len(L)):
@@ -96,8 +96,8 @@ def IDBSCAN(data, eps, minpts):
         clean_s = [item for item in s if item not in S]
         followers_not_leaders.extend(clean_s)
         S.extend(clean_s)
-    if l_idx % 500 == 0:
-        print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(data)))
+        if l_idx % 500 == 0:
+            print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(data)))
     # flat_S = [idx_S for sublist in S for idx_S in sublist]
     # S is the idx of the leaders and appendices
     return S, followers_not_leaders
@@ -154,4 +154,29 @@ F is a list in the length of the data that contains the followers of each exampl
 For leader l, its follwers exist in the list F[l]
 The elements that are not leader will have their list in F empty"""
 
-# FOR DEBUG ONLY
+
+def main_IDBSCAN(df, eps, minpts):
+    data = np.asarray(df)
+    labels = [0] * len(data)
+    # data should be ndarray
+    L, F = leader_asterisk(data, eps, eps)
+    print("leaders list contains " + str(len(L)))
+    print("leaders list contain " + str(len(F)))
+    S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
+    if len(S)-len(followers_not_leaders) != len(L):
+        raise ValueError('S != sum length of leaders and intersections')
+    # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
+    prediction = DBSCAN(np.asarray(df.loc[S]), eps, minpts)
+    prediction_leaders = prediction[0:len(L)]
+    if len(prediction_leaders) != len(F):
+        raise ValueError('prediction_leaders length not same as F')
+    for idx_L in range(len(prediction_leaders)):
+        current_prediction = prediction_leaders[idx_L]
+        labels[F[idx_L]] = current_prediction
+        # labels.append([0] * len(data))
+        # for idx_inner in F[idx_F]:
+    if 0 in labels:
+        raise ValueError('some elements were not classified')
+        print([i for i, e in enumerate(labels) if e == 0])
+
+    return labels
