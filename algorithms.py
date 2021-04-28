@@ -82,6 +82,27 @@ def FFT_sampling(D, s, minpts):
     return list(set(fft_out))
 
 
+def IDBSCAN(data, eps, minpts):
+    L, F = leader_asterisk(data, eps, eps)
+    S = L.copy()  # make sure this is a copy of the L list
+    followers_not_leaders = []
+    for l_idx in range(len(L)):
+        s = find_interesect_followers(l_idx, L, F)
+        if len(F[L[l_idx]]) > minpts:
+            if len(s) > minpts:
+                s = FFT_sampling(data, s, minpts)
+            else:
+                s.extend(sample(F[L[l_idx]], minpts - len(s)))
+        clean_s = [item for item in s if item not in S]
+        followers_not_leaders.extend(clean_s)
+        S.extend(clean_s)
+    if l_idx % 500 == 0:
+        print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(data)))
+    # flat_S = [idx_S for sublist in S for idx_S in sublist]
+    # S is the idx of the leaders and appendices
+    return S, followers_not_leaders
+
+
 def neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts):
     addition_temp = []
     addition_out = []
@@ -98,28 +119,8 @@ def neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts):
         addition_temp = np.concatenate(addition_temp).ravel().tolist()
         addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
         addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
-    # addition_out.extend(addition2)
 
     return labels, addition_out
-
-
-def IDBSCAN(data, eps, minpts):
-    L, F = leader_asterisk(data, eps, eps)
-    S = L.copy()  # make sure this is a copy of the L list
-    for l_idx in range(len(L)):
-        s = find_interesect_followers(l_idx, L, F)
-        if len(F[L[l_idx]]) > minpts:
-            if len(s) > minpts:
-                s = FFT_sampling(data, s, minpts)
-            else:
-                s.extend(sample(F[L[l_idx]], minpts - len(s)))
-        clean_s = [item for item in s if item not in S]
-        S.extend(clean_s)
-    if l_idx % 500 == 0:
-        print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(data)))
-    # flat_S = [idx_S for sublist in S for idx_S in sublist]
-    # S is the idx of the leaders and appendices
-    return S
 
 
 def DBSCAN(D, eps, minpts):
@@ -145,19 +146,6 @@ def DBSCAN(D, eps, minpts):
                 labels, addition = neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts)
                 while len(addition) > 0:
                     labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, neigh, D, minpts)
-                # for q_idx in S:  # handle of the nearest neighboors
-                #     if labels[q_idx] == -1:  # labeled as noise
-                #         labels[q_idx] = cluster
-                #     if labels[q_idx] == 0:  # meaning label q is undefined
-                #         labels[q_idx] = cluster
-                #         idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, 23), return_distance=False)
-                #         NN = np.asarray(idx_NN[0])
-                #         if len(NN) >= minpts:
-                #             addition1 = [item for item in NN if
-                #                          item not in S]  # all elements that do not exist already in S
-                #             addition2 = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
-                #             if len(addition2) > 0:
-                #                 S = np.append(S, addition2)
     return labels
 
 

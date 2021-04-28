@@ -11,34 +11,37 @@ tau = eps
 minpts = 4
 
 ## uncomment the following lines for a full execution
-# S = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
-# with open("leaders_idx.txt", "w") as f:
+# S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
+# with open("IDBSCAN_idx.txt", "w") as f:
 #     for s in S:
 #         f.write(str(s) +"\n")
+#
+# with open("intersection_idx.txt", "w") as f:
+#     for follower in followers_interserc:
+#         f.write(str(follower) +"\n")
 
 
 # for debug purposes - loading previously saved leader_idx's
 # leaders_df = pd.DataFrame()
-with open("leaders_idx.txt", "r") as f:
+with open("IDBSCAN_idx.txt", "r") as f:
     S = []
     for line in f:
         S.append(int(line.strip()))
-        # leaders_df.append(df.iloc[int(line)])
 
 print("length original data = " + str(len(np.asarray(df))))
 print("length of S after IDBSCAN = " + str(len(S)))
 prediction = algorithms.DBSCAN(np.asarray(df.loc[S]), eps, minpts)
-
-# FOR DEBUG ONLY
-print(len(prediction))
-print(prediction[0:41])
-print(prediction[1696])
-print(prediction[1741])
-print('=====')
-print(prediction[1703])
-print(prediction[1697])
-print(prediction[9])
-print(prediction[243])
+#
+# # FOR DEBUG ONLY
+# print(len(prediction))
+# print(prediction[0:41])
+# print(prediction[1696])
+# print(prediction[1741])
+# print('=====')
+# print(prediction[1703])
+# print(prediction[1697])
+# print(prediction[9])
+# print(prediction[243])
 
 # print("max = " + str(max(S)))
 # print("min = " + str(min(S)))
