@@ -3,7 +3,7 @@ from sklearn.metrics.cluster import adjusted_rand_score, silhouette_score
 import numpy as np
 
 
-def validate_with_ground_truth(ground_truth, prediction):
+def ARI(ground_truth, prediction):
     return adjusted_rand_score(ground_truth, prediction)
 
 

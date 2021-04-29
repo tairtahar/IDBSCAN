@@ -32,7 +32,7 @@ def leader_asterisk(D, tau, eps):
     # list of lists, in the order of L, contains indices of the population represented by the same order element of L
     for d_idx in range(len(D[1:])):
         # for d_idx in range(300): # FOR DEBUG ONLY
-        curr_idx = d_idx + 1
+        curr_idx = d_idx + 1  #since we start with 1 insead of zero
         leader = True
         for l_idx in range(len(L)):
             if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
@@ -41,13 +41,19 @@ def leader_asterisk(D, tau, eps):
         if leader:
             L.append(curr_idx)
     print("leader* first iteration on data Done")
+    flag = False
+    outliers = []
     for d_idx in range(len(D)):
-        for l_idx in range(len(L)):
-            if utils.l2norm(D[L[l_idx]], D[d_idx]) <= eps:
+        for l_idx in L:
+            if utils.l2norm(D[l_idx], D[d_idx]) <= eps:
                 F[l_idx].append(d_idx)
+                flag = True
+        if flag == False:
+            print(d_idx)
+            outliers.append(d_idx)
 
     print("leader* complete")
-    return L, F
+    return L, F, outliers
 
 
 def find_interesect_followers(l_idx, L: list, F: list):
@@ -97,7 +103,7 @@ def IDBSCAN(data, L, F, minpts):
         followers_not_leaders.extend(clean_s)
         S.extend(clean_s)
         if l_idx % 500 == 0:
-            print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(data)))
+            print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(L)))
     # flat_S = [idx_S for sublist in S for idx_S in sublist]
     # S is the idx of the leaders and appendices
     return S, followers_not_leaders
@@ -111,7 +117,7 @@ def neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts):
             labels[q_idx] = cluster
         if labels[q_idx] == 0:  # meaning label q is undefined
             labels[q_idx] = cluster
-            idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, 23), return_distance=False)
+            idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, 22), return_distance=False)
             NN = np.asarray(idx_NN[0])
             if len(NN) >= minpts:
                 addition_temp.append(NN)
@@ -131,7 +137,7 @@ def DBSCAN(D, eps, minpts):
             # NN = NearestNeighbors(D, d_idx, eps)
             neigh = NearestNeighbors(radius=eps)
             neigh.fit(D)
-            idx_NN = neigh.radius_neighbors(D[d_idx].reshape(1, 23),
+            idx_NN = neigh.radius_neighbors(D[d_idx].reshape(1, 22),
                                             return_distance=False)  # finds the indices of the samples in the radius eps around current
             # sample
             NN = np.asarray(idx_NN[0])
@@ -159,7 +165,7 @@ def main_IDBSCAN(df, eps, minpts):
     data = np.asarray(df)
     labels = [0] * len(data)
     # data should be ndarray
-    L, F = leader_asterisk(data, eps, eps)
+    L, F, outliers = leader_asterisk(data, eps, eps)
     print("leaders list contains " + str(len(L)))
     print("leaders list contain " + str(len(F)))
     S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
@@ -168,15 +174,15 @@ def main_IDBSCAN(df, eps, minpts):
     # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
     prediction = DBSCAN(np.asarray(df.loc[S]), eps, minpts)
     prediction_leaders = prediction[0:len(L)]
-    if len(prediction_leaders) != len(F):
-        raise ValueError('prediction_leaders length not same as F')
-    for idx_L in range(len(prediction_leaders)):
+    for idx_L in range(len(L)): #that step would label each group of followers according to its leader prediction
         current_prediction = prediction_leaders[idx_L]
-        labels[F[idx_L]] = current_prediction
-        # labels.append([0] * len(data))
-        # for idx_inner in F[idx_F]:
+        current_leader_idx = L[idx_L]
+        labels[current_leader_idx] = current_prediction
+        current_followers_idx = F[current_leader_idx]
+        for follower_idx in current_followers_idx:
+            labels[follower_idx] = current_prediction
     if 0 in labels:
-        raise ValueError('some elements were not classified')
         print([i for i, e in enumerate(labels) if e == 0])
+        raise ValueError('some elements were not classified')
 
     return labels

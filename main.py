@@ -3,17 +3,33 @@ import algorithms
 import numpy as np
 import evaluation
 
-if __name__=='main':
-    data = utils.load_data('mushroom_arff.arff')
-    # data.info()
-    df = utils.categorial_handle(data, 2)
-    true_class = df.iloc[:, -1]
-    df = df.drop(df.columns[-1], axis=1)
-    eps = 2.5
-    tau = eps
-    minpts = 4
-    predictions = algorithms.main_IDBSCAN(df, eps, minpts)
-    # rand_score = validate_with_ground_truth()
+
+def perform_evaluation(data, true_class, predictions, verbose=False):
+    ARI = evaluation.ARI(true_class, predictions)
+    silhouette_coefficient = evaluation.silhouette_coefficient(data, predictions)
+    calinsky_harabasz = evaluation.calinsky_harabasz_index(data, predictions)
+    davies_boulding = evaluation.davies_boulding_index(data, predictions)
+    if verbose:
+        print("ARI: " + str(ARI))
+        print("Silhouette: " + str(silhouette_coefficient))
+        print("calinsky harabasz index: " + str(calinsky_harabasz))
+        print("davies boulding index: " + str(davies_boulding))
+
+    return ARI, silhouette_coefficient, calinsky_harabasz, davies_boulding
+
+
+# if __name__ == 'main':
+data = utils.load_data('mushroom_arff.arff')
+# data.info()
+df = utils.categorial_handle(data, 2)
+true_class = df.iloc[:, -1]
+df = df.drop(df.columns[-1], axis=1)
+eps = 2.5
+tau = eps
+minpts = 4
+predictions = algorithms.main_IDBSCAN(df, eps, minpts)
+perform_evaluation(data, true_class, predictions)
+
 ## uncomment the following lines for a full execution
 # S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
 # with open("IDBSCAN_idx.txt", "w") as f:
