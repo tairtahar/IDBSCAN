@@ -5,13 +5,16 @@ import numpy as np
 from keras.utils import np_utils
 import sklearn
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-
+import pandas as pd
 
 def load_data(file_name: str):
     data = arff.loadarff(file_name)
     df = pd.DataFrame(data[0])
     # df.info()
     return df
+
+def load_csv_data(file_name: str):
+    data = pd.read_csv(file_name, delimiter=",")
 
 
 def categorial_handle(data: np.ndarray, encode_option: int):

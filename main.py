@@ -2,7 +2,8 @@ import utils
 import algorithms
 import numpy as np
 import evaluation
-
+from sklearn.cluster import DBSCAN
+import time
 
 def perform_evaluation(data, true_class, predictions, verbose=False):
     ARI = evaluation.ARI(true_class, predictions)
@@ -19,7 +20,8 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 
 # if __name__ == 'main':
-data = utils.load_data('mushroom_arff.arff')
+algos = ["IDBSCAN", "DBSCAN", "SKlearn-DBSCAN"]
+data = utils.load_data('datasets/mushroom_arff.arff')
 # data.info()
 df = utils.categorial_handle(data, 2)
 true_class = df.iloc[:, -1]
@@ -27,8 +29,26 @@ df = df.drop(df.columns[-1], axis=1)
 eps = 2.5
 tau = eps
 minpts = 4
-predictions = algorithms.main_IDBSCAN(df, eps, minpts)
-perform_evaluation(data, true_class, predictions)
+for i in range(len(algos)):
+    algo = algos[i]
+    start = time.time()
+    if algo == "IDBSCAN":
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts)
+        print("For my IDBSCAN:")
+
+    elif algo == "DBSCAN":
+        predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
+        print("For my DBSCAN:")
+
+    else:  #sklearn version
+        print("For sklearn DBSCAN:")
+        clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
+        predictions = clustring.labels_
+
+    end = time.time()
+    time_elapsed = end - start
+    print("runtime: " + str(time_elapsed))
+    perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
 
 ## uncomment the following lines for a full execution
 # S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
