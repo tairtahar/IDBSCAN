@@ -170,19 +170,19 @@ def main_IDBSCAN(df, eps, minpts, save_flag):
         L, F, outliers = leader_asterisk(data, eps, eps)
         print("leaders list contains " + str(len(L)))
         S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
-        with open("leaders_idx.txt", "w") as f:
+        with open("results_mushrooms/leaders_idx.txt", "w") as f:
             for l in L:
                 f.write(str(l) + "\n")
 
-        with open("followers.txt", "w") as f:
+        with open("results_mushrooms/followers.txt", "w") as f:
             for followers_list in F:
                 f.write(str(followers_list) + "\n")
 
-        with open("IDBSCAN_idx.txt", "w") as f:
+        with open("results_mushrooms/IDBSCAN_idx.txt", "w") as f:
             for s in S:
                 f.write(str(s) + "\n")
 
-        with open("intersection_idx.txt", "w") as f:
+        with open("results_mushrooms/intersection_idx.txt", "w") as f:
             for follower in followers_not_leaders:
                 f.write(str(follower) + "\n")
 
@@ -190,12 +190,12 @@ def main_IDBSCAN(df, eps, minpts, save_flag):
             raise ValueError('S != sum length of leaders and intersections')
 
     else:  # loading only
-        with open("leaders_idx.txt", "r") as f:
+        with open("results_mushrooms/leaders_idx.txt", "r") as f:
             L = []
             for line in f:
                 L.append(int(line.strip()))
 
-        with open("followers.txt", "r") as f:
+        with open("results_mushrooms/followers.txt", "r") as f:
             F = []
             for line in f:
                 current_line = []
@@ -204,12 +204,12 @@ def main_IDBSCAN(df, eps, minpts, save_flag):
                         current_line.append(int(element.strip(' []\n')))
                 F.append(current_line)
 
-        with open("IDBSCAN_idx.txt", "r") as f:
+        with open("results_mushrooms/IDBSCAN_idx.txt", "r") as f:
             S = []
             for line in f:
                 S.append(int(line.strip()))
 
-        with open("intersection_idx.txt", "r") as f:
+        with open("results_mushrooms/intersection_idx.txt", "r") as f:
             followers_not_leaders = []
             for line in f:
                 followers_not_leaders.append(int(line.strip()))
