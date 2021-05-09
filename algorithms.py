@@ -3,7 +3,7 @@ import utils
 import random
 from sklearn.neighbors import NearestNeighbors, KDTree
 from random import sample
-
+import pandas as pd
 
 def leader(D, tau):
     L = [0]  # list of all idices of the leaders
@@ -117,7 +117,7 @@ def neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts):
             labels[q_idx] = cluster
         if labels[q_idx] == 0:  # meaning label q is undefined
             labels[q_idx] = cluster
-            idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, 22), return_distance=False)
+            idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
             NN = np.asarray(idx_NN[0])
             if len(NN) >= minpts:
                 addition_temp.append(NN)
@@ -137,7 +137,7 @@ def DBSCAN(D, eps, minpts):
             # NN = NearestNeighbors(D, d_idx, eps)
             neigh = NearestNeighbors(radius=eps)
             neigh.fit(D)
-            idx_NN = neigh.radius_neighbors(D[d_idx].reshape(1, 22),
+            idx_NN = neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size),
                                             return_distance=False)  # finds the indices of the samples in the radius eps around current
             # sample
             NN = np.asarray(idx_NN[0])
@@ -161,16 +161,57 @@ For leader l, its follwers exist in the list F[l]
 The elements that are not leader will have their list in F empty"""
 
 
-def main_IDBSCAN(df, eps, minpts):
+def main_IDBSCAN(df, eps, minpts, save_flag):
     data = np.asarray(df)
     labels = [0] * len(data)
-    # data should be ndarray
-    L, F, outliers = leader_asterisk(data, eps, eps)
-    print("leaders list contains " + str(len(L)))
-    print("leaders list contain " + str(len(F)))
-    S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
-    if len(S)-len(followers_not_leaders) != len(L):
-        raise ValueError('S != sum length of leaders and intersections')
+
+    if save_flag:  #creating and loading
+        # data should be ndarray
+        L, F, outliers = leader_asterisk(data, eps, eps)
+        print("leaders list contains " + str(len(L)))
+        S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
+        with open("leaders_idx.txt", "w") as f:
+            for l in L:
+                f.write(str(l) + "\n")
+
+        with open("followers.txt", "w") as f:
+            for followers_list in F:
+                f.write(str(followers_list) + "\n")
+
+        with open("IDBSCAN_idx.txt", "w") as f:
+            for s in S:
+                f.write(str(s) + "\n")
+
+        with open("intersection_idx.txt", "w") as f:
+            for follower in followers_not_leaders:
+                f.write(str(follower) + "\n")
+
+        if len(S)-len(followers_not_leaders) != len(L):
+            raise ValueError('S != sum length of leaders and intersections')
+
+    else:  # loading only
+        with open("leaders_idx.txt", "r") as f:
+            L = []
+            for line in f:
+                L.append(int(line.strip()))
+
+        with open("followers.txt", "r") as f:
+            F = []
+            for line in f:
+                F.append(int(line.strip()))
+
+        with open("IDBSCAN_idx.txt", "r") as f:
+            S = []
+            for line in f:
+                S.append(int(line.strip()))
+
+        with open("intersection_idx.txt", "r") as f:
+            followers_not_leaders = []
+            for line in f:
+                followers_not_leaders.append(int(line.strip()))
+
+        if len(S)-len(followers_not_leaders) != len(L):
+            raise ValueError('S != sum length of leaders and intersections')
     # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
     prediction = DBSCAN(np.asarray(df.loc[S]), eps, minpts)
     prediction_leaders = prediction[0:len(L)]

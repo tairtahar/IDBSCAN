@@ -21,19 +21,26 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 # if __name__ == 'main':
 algos = ["IDBSCAN", "DBSCAN", "SKlearn-DBSCAN"]
-data = utils.load_data('datasets/mushroom_arff.arff')
+data_name = "mushroom"
+if data_name == "mushroom":
+    data = utils.load_data_arff('datasets/mushroom_arff.arff')
+    eps = 2.5
+    minpts = 4
+elif data_name == "letter":
+    data = utils.load_csv_data("datasets/letter.csv")
+    eps = 0.5
+    minpts = 8
 # data.info()
+tau = eps
 df = utils.categorial_handle(data, 2)
 true_class = df.iloc[:, -1]
 df = df.drop(df.columns[-1], axis=1)
-eps = 2.5
-tau = eps
-minpts = 4
+
 for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts)
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True)
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":
@@ -50,7 +57,7 @@ for i in range(len(algos)):
     print("runtime: " + str(time_elapsed))
     perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
 
-## uncomment the following lines for a full execution
+# ## uncomment the following lines for a full execution
 # S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
 # with open("IDBSCAN_idx.txt", "w") as f:
 #     for s in S:
