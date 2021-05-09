@@ -198,7 +198,11 @@ def main_IDBSCAN(df, eps, minpts, save_flag):
         with open("followers.txt", "r") as f:
             F = []
             for line in f:
-                F.append(int(line.strip()))
+                current_line = []
+                if line != "[]\n":
+                    for element in line.split(','):
+                        current_line.append(int(element.strip(' []\n')))
+                F.append(current_line)
 
         with open("IDBSCAN_idx.txt", "r") as f:
             S = []
