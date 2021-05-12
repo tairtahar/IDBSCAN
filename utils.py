@@ -6,10 +6,20 @@ from keras.utils import np_utils
 import sklearn
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 def load_data_arff(file_name: str):
     data = arff.loadarff(file_name)
     df = pd.DataFrame(data[0])
+    # df_numeric = df.copy()
+    # df_numeric._get_numeric_data()
+    #
+    # scaler = MinMaxScaler()
+    # scaler.fit(df_numeric)
+    # df_numeric = scaler.transform(df_numeric)
+
+
+
     # df.info()
     return df
 
@@ -27,8 +37,9 @@ def categorial_handle(data: np.ndarray, encode_option: int):
         encoder = LabelEncoder()
         for column in data.columns:
             data[column] = encoder.fit_transform(data[column])
+        data = pd.DataFrame(data)
         print("Categorial to ordinal Done")
-    return data
+    return data  #returns dataFrame
 
 
 def l2norm(v1, v2):

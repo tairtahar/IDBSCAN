@@ -4,6 +4,9 @@ import numpy as np
 import evaluation
 from sklearn.cluster import DBSCAN
 import time
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+import pandas as pd
+
 
 def perform_evaluation(data, true_class, predictions, verbose=False):
     ARI = evaluation.ARI(true_class, predictions)
@@ -20,8 +23,8 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 
 # if __name__ == 'main':
-algos = ["IDBSCAN", "DBSCAN", "SKlearn-DBSCAN"]
-data_name = "mushroom"
+algos = ["IDBSCAN", "DBSCAN"]
+data_name = "letter"
 if data_name == "mushroom":
     data = utils.load_data_arff('datasets/mushroom_arff.arff')
     eps = 2.5
@@ -35,27 +38,32 @@ tau = eps
 df = utils.categorial_handle(data, 2)
 true_class = df.iloc[:, -1]
 df = df.drop(df.columns[-1], axis=1)
-
+# scaler = MinMaxScaler()  # StandardScaler()  #
+# scaler.fit(df)
+# df = pd.DataFrame(scaler.transform(df))  # normalized data
+# normalized_df =
 for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, False)
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "results_letter")
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
         print("For my DBSCAN:")
 
-    else:  #sklearn version
-        print("For sklearn DBSCAN:")
-        clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
-        predictions = clustring.labels_
+    # sklearn version
+    # print("For sklearn DBSCAN:")
+    clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
+    predictions_ref = clustring.labels_
 
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
-    perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
+    # perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
+    perform_evaluation(data, predictions_ref, predictions,
+                       True)  # make sure the data here should be the original without one hot
 
 # ## uncomment the following lines for a full execution
 # S, followers_interserc = algorithms.IDBSCAN(np.asarray(df), eps, minpts)
