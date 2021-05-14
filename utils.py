@@ -71,6 +71,13 @@ def load_preprocess_abalone():
     return df, true_class
 
 
+def load_preprocess_sensorless():
+    data, true_class = load_svmlight_file("datasets/Sensorless.scale.txt")
+    df = pd.DataFrame(data.todense())
+    true_class = np.asarray(true_class)
+    return df, true_class
+
+
 def load_csv_data(file_name: str):
     data = pd.read_csv(file_name, delimiter=",")
     return data

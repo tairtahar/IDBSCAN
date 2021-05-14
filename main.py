@@ -24,7 +24,7 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 # if __name__ == 'main':
 algos = ["IDBSCAN", "DBSCAN"]
-data_name = "abalone"
+data_name = "mushroom"
 if data_name == "mushroom":
     df, true_class = utils.load_preprocess_mushrooms() # one hot
     eps = 2.5
@@ -45,7 +45,10 @@ elif data_name == "abalone":
     df, true_class = utils.load_preprocess_abalone()
     eps = 0.2
     minpts = 3
-
+elif data_name == "sensorless":
+    df, true_class = utils.load_preprocess_sensorless()
+    eps = 0.3
+    minpts = 20
 tau = eps
 
 clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
@@ -57,7 +60,7 @@ for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_abalone")
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_sensorless")
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":

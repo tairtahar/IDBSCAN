@@ -5,6 +5,8 @@ from sklearn.neighbors import NearestNeighbors, KDTree
 from random import sample
 import pandas as pd
 import os
+from scipy.spatial.distance import pdist
+
 
 def leader(D, tau):
     L = [0]  # list of all idices of the leaders
@@ -31,10 +33,12 @@ def leader_asterisk(D, tau, eps):
     L = [0]  # list of all idices of the leaders
     F = [[] for _ in range(len(D))]
     # list of lists, in the order of L, contains indices of the population represented by the same order element of L
+    # dist_max = pdist(D)
     for d_idx in range(len(D[1:])):
         # for d_idx in range(300): # FOR DEBUG ONLY
         curr_idx = d_idx + 1  #since we start with 1 insead of zero
         leader = True
+
         for l_idx in range(len(L)):
             if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
                 leader = False
