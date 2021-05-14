@@ -10,59 +10,64 @@ import pandas as pd
 
 def perform_evaluation(data, true_class, predictions, verbose=False):
     ARI = evaluation.ARI(true_class, predictions)
-    silhouette_coefficient = evaluation.silhouette_coefficient(data, predictions)
-    calinsky_harabasz = evaluation.calinsky_harabasz_index(data, predictions)
-    davies_boulding = evaluation.davies_boulding_index(data, predictions)
+    # silhouette_coefficient = evaluation.silhouette_coefficient(data, predictions)
+    # calinsky_harabasz = evaluation.calinsky_harabasz_index(data, predictions)
+    # davies_boulding = evaluation.davies_boulding_index(data, predictions)
     if verbose:
         print("ARI: " + str(ARI))
-        print("Silhouette: " + str(silhouette_coefficient))
-        print("calinsky harabasz index: " + str(calinsky_harabasz))
-        print("davies boulding index: " + str(davies_boulding))
+        # print("Silhouette: " + str(silhouette_coefficient))
+        # print("calinsky harabasz index: " + str(calinsky_harabasz))
+        # print("davies boulding index: " + str(davies_boulding))
 
-    return ARI, silhouette_coefficient, calinsky_harabasz, davies_boulding
+    return ARI  # , silhouette_coefficient, calinsky_harabasz, davies_boulding
 
 
 # if __name__ == 'main':
 algos = ["IDBSCAN", "DBSCAN"]
-data_name = "letter"
+data_name = "abalone"
 if data_name == "mushroom":
-    data = utils.load_data_arff('datasets/mushroom_arff.arff')
+    df, true_class = utils.load_preprocess_mushrooms() # one hot
     eps = 2.5
     minpts = 4
+    # eps = 3.8
+    # minpts = 680
+
 elif data_name == "letter":
-    data = utils.load_csv_data("datasets/letter.csv")
+    df, true_class = utils.load_preprocess_letters()
     eps = 0.5
     minpts = 8
 # data.info()
+elif data_name == "pendigit":
+    df, true_class = utils.load_preprocess_pendigit()
+    eps = 40
+    minpts = 4
+elif data_name == "abalone":
+    df, true_class = utils.load_preprocess_abalone()
+    eps = 0.2
+    minpts = 3
+
 tau = eps
-df = utils.categorial_handle(data, 2)
-true_class = df.iloc[:, -1]
-df = df.drop(df.columns[-1], axis=1)
-# scaler = MinMaxScaler()  # StandardScaler()  #
-# scaler.fit(df)
-# df = pd.DataFrame(scaler.transform(df))  # normalized data
-# normalized_df =
+
+clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
+predictions_ref = clustring.labels_
+print("baseline sklearn DBSCAN evaluation: ", )
+perform_evaluation(df, true_class, predictions_ref,
+                   True)
 for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "results_letter")
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_abalone")
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
         print("For my DBSCAN:")
-
-    # sklearn version
-    # print("For sklearn DBSCAN:")
-    clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
-    predictions_ref = clustring.labels_
-
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
     # perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
-    perform_evaluation(data, predictions_ref, predictions,
+    perform_evaluation(df, predictions_ref, predictions,
                        True)  # make sure the data here should be the original without one hot
 
 # ## uncomment the following lines for a full execution

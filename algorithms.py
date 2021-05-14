@@ -169,8 +169,10 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
     if save_flag:  #creating and loading
         # data should be ndarray
         L, F, outliers = leader_asterisk(data, eps, eps)
-        print("leaders list contains " + str(len(L)))
+        print("leaders list contains", len(L))
         S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
+        print("Intersection followers list contains", len(followers_not_leaders))
+        print("All samples to be processed list contains", len(S))
         with open(os.path.join(path, "leaders_idx.txt"), "w") as f:
             for l in L:
                 f.write(str(l) + "\n")
@@ -219,7 +221,9 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
             raise ValueError('S != sum length of leaders and intersections')
     # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
     prediction = DBSCAN(np.asarray(df.loc[S]), eps, minpts)
-    prediction_leaders = prediction[0:len(L)]
+    if len(prediction) != len(S):
+        raise ValueError('prediction list contains', len(prediction), 'while S list contains', len(S))
+    prediction_leaders = prediction[0:len(L)]  # the first in the list are the prediction of the leaders.
     for idx_L in range(len(L)): #that step would label each group of followers according to its leader prediction
         current_prediction = prediction_leaders[idx_L]
         current_leader_idx = L[idx_L]
