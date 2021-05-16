@@ -6,7 +6,7 @@ from random import sample
 import pandas as pd
 import os
 from scipy.spatial.distance import pdist, squareform
-
+# from sklearn.neighbors import BallTree, KDTree
 
 def leader(D, tau):
     L = [0]  # list of all idices of the leaders
@@ -119,17 +119,19 @@ def IDBSCAN(data, L, F, minpts):
     return S, followers_not_leaders
 
 
-def neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts):
+def neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
     addition_temp = []
     addition_out = []
     for q_idx in S:  # handle of the nearest neighboors
-        if labels[q_idx] == -1:  # labeled as noise
+        if labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
             labels[q_idx] = cluster
         if labels[q_idx] == 0:  # meaning label q is undefined
             labels[q_idx] = cluster
-            idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
-            NN = np.asarray(idx_NN[0])
-            if len(NN) >= minpts:
+            NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
+
+            # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
+            # NN = np.asarray(idx_NN[0])
+            if NN.shape[0] >= minpts:
                 addition_temp.append(NN)
     if len(addition_temp) > 0:
         addition_temp = np.concatenate(addition_temp).ravel().tolist()
@@ -144,14 +146,14 @@ def DBSCAN(D, eps, minpts):
     labels = [0] * len(D)
     for d_idx in range(len(D)):
         if labels[d_idx] == 0:
-            # NN = NearestNeighbors(D, d_idx, eps)
-            neigh = NearestNeighbors(radius=eps)
-            neigh.fit(D)
-            idx_NN = neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size),
-                                            return_distance=False)  # finds the indices of the samples in the radius eps around current
+            # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
+            # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
+            # of the samples in the radius eps around current
+            tree = KDTree(D)
+            NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
             # sample
-            NN = np.asarray(idx_NN[0])
-            if len(NN) < minpts:
+            # NN = np.asarray(idx_NN[0])
+            if NN.shape[0] < minpts:
                 labels[d_idx] = -1  # labels as noise
             else:
                 cluster += 1
@@ -159,9 +161,9 @@ def DBSCAN(D, eps, minpts):
                 S = NN.copy()
                 # S = S.astype(int)
                 S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
-                labels, addition = neighboors_labeling(S, d_idx, labels, cluster, neigh, D, minpts)
+                labels, addition = neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
                 while len(addition) > 0:
-                    labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, neigh, D, minpts)
+                    labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
     return labels
 
 
