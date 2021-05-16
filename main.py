@@ -60,7 +60,7 @@ for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_sensorless")
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_new_calcs")
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":

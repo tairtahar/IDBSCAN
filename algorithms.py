@@ -5,7 +5,7 @@ from sklearn.neighbors import NearestNeighbors, KDTree
 from random import sample
 import pandas as pd
 import os
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform
 
 
 def leader(D, tau):
@@ -30,17 +30,22 @@ def leader(D, tau):
 
 
 def leader_asterisk(D, tau, eps):
-    L = [0]  # list of all idices of the leaders
+    L = [0]  # list of all idices of the leaders. Initialized with the first index
     F = [[] for _ in range(len(D))]
     # list of lists, in the order of L, contains indices of the population represented by the same order element of L
-    # dist_max = pdist(D)
+    dist_mat = pdist(D)
+    m = len(D)
     for d_idx in range(len(D[1:])):
         # for d_idx in range(300): # FOR DEBUG ONLY
         curr_idx = d_idx + 1  #since we start with 1 insead of zero
         leader = True
 
         for l_idx in range(len(L)):
-            if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
+            if curr_idx < L[l_idx]:
+                curr_dist = dist_mat[m*curr_idx+L[l_idx]-((curr_idx+2)*(curr_idx+1))//2]
+            else:
+                curr_dist = dist_mat[m*L[l_idx]+curr_idx-((L[l_idx]+2)*(L[l_idx]+1))//2]
+            if curr_dist <= tau:
                 leader = False
                 break
         if leader:
@@ -50,7 +55,11 @@ def leader_asterisk(D, tau, eps):
     outliers = []
     for d_idx in range(len(D)):
         for l_idx in L:
-            if utils.l2norm(D[l_idx], D[d_idx]) <= eps:
+            if d_idx < l_idx:
+                curr_dist = dist_mat[m*d_idx+l_idx-((d_idx+2)*(d_idx+1))//2]
+            else:
+                curr_dist = dist_mat[m*l_idx+d_idx-((l_idx+2)*(l_idx+1))//2]
+            if curr_dist <= eps:
                 F[l_idx].append(d_idx)
                 flag = True
         if flag == False:
@@ -63,13 +72,12 @@ def leader_asterisk(D, tau, eps):
 
 def find_interesect_followers(l_idx, L: list, F: list):
     s = []
-    l1 = L[l_idx]
+    l1 = L[l_idx]  # l1 is the index of the leader
     for l2 in L:
         if l2 == l1:
             continue
         intersection = list(set(F[l1]) & set(F[l2]))
         s.extend(intersection)
-    # flat_s = [idx_s for sublist in s for idx_s in sublist]
     s_final = list(set(s))
     # print("intersection calculation complete")
     return s_final
@@ -80,21 +88,18 @@ def FFT_sampling(D, s, minpts):
     fft_out = []
     current_idx = sample(range(len(s)), 1)[0]
     fft_out.append(s[current_idx])
-    while len(fft_out) < minpts:
-        longest_dist = 0
-        for j in range(len(s)):
-            if current_idx == j or s[j] in fft_out:
-                continue
-            if utils.l2norm(D[s[current_idx]], D[s[j]]) > longest_dist:
-                longest_dist = utils.l2norm(D[s[current_idx]], D[s[j]])
-                farest_idx = j
-        current_idx = farest_idx
-        fft_out.append(current_idx)
+    dist_mat = squareform(pdist(D[s]))
+    while len(list(set(fft_out))) < minpts:
+        farthest_idx_s = np.argmax(dist_mat[current_idx])
+        fft_out.append(s[farthest_idx_s])
+        dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
+        dist_mat[farthest_idx_s][current_idx] = 0
+        current_idx = farthest_idx_s
+
     return list(set(fft_out))
 
 
 def IDBSCAN(data, L, F, minpts):
-    # L, F = leader_asterisk(data, eps, eps)
     S = L.copy()  # make sure this is a copy of the L list
     followers_not_leaders = []
     for l_idx in range(len(L)):

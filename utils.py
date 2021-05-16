@@ -72,7 +72,7 @@ def load_preprocess_abalone():
 
 
 def load_preprocess_sensorless():
-    data, true_class = load_svmlight_file("datasets/Sensorless.scale.txt")
+    data, true_class = load_svmlight_file("datasets/Sensorless.txt")
     df = pd.DataFrame(data.todense())
     true_class = np.asarray(true_class)
     return df, true_class
@@ -100,7 +100,8 @@ def categorial_handle(data: np.ndarray, encode_option: int):
 
 def l2norm(v1, v2):
     # return np.sqrt(np.sum(np.power(v1,2) - np.power(v2,2)))
-    return ((v1 - v2) ** 2).sum()
+    # return ((v1 - v2) ** 2).sum()
+    return np.linalg.norm(v1-v2, ord=2)
 
 # for DEBUG only
 # load_data('mushroom_arff.arff')
