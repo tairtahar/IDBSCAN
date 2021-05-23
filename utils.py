@@ -1,6 +1,6 @@
 from scipy.io import arff
 import numpy as np
-from keras.utils import np_utils
+# from keras.utils import np_utils
 import sklearn
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 import pandas as pd

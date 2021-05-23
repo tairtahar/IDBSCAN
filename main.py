@@ -24,31 +24,35 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 # if __name__ == 'main':
 algos = ["IDBSCAN", "DBSCAN"]
-data_name = "mushroom"
-if data_name == "mushroom":
+data_name = "cadata"
+if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms() # one hot
     eps = 2.5
     minpts = 4
     # eps = 3.8
     # minpts = 680
 
-elif data_name == "letter":
+elif data_name == "letter":  # 20,000 samples
     df, true_class = utils.load_preprocess_letters()
     eps = 0.5
     minpts = 8
 # data.info()
-elif data_name == "pendigit":
+elif data_name == "pendigit":  # 10,992 samples, 0.739 ARI, and IDBSCAN takes longer
     df, true_class = utils.load_preprocess_pendigit()
     eps = 40
     minpts = 4
-elif data_name == "abalone":
+elif data_name == "abalone":  # 4,177 samples, works great
     df, true_class = utils.load_preprocess_abalone()
     eps = 0.2
     minpts = 3
-elif data_name == "sensorless":
+elif data_name == "sensorless":  # 58,509 samples
     df, true_class = utils.load_preprocess_sensorless()
     eps = 0.3
     minpts = 20
+elif data_name == "cadata":  # 20,000 woorks but slowly
+    df, true_class = utils.load_preprocess_catadata()
+    eps = 200
+    minpts = 8
 tau = eps
 
 clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))

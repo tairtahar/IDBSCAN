@@ -41,7 +41,9 @@ def leader_asterisk(D, tau, eps):
         leader = True
 
         for l_idx in range(len(L)):
-            if curr_idx < L[l_idx]:
+            if curr_idx == L[l_idx]:
+                curr_dist = 0
+            elif curr_idx < L[l_idx]:
                 curr_dist = dist_mat[m*curr_idx+L[l_idx]-((curr_idx+2)*(curr_idx+1))//2]
             else:
                 curr_dist = dist_mat[m*L[l_idx]+curr_idx-((L[l_idx]+2)*(L[l_idx]+1))//2]
@@ -55,7 +57,9 @@ def leader_asterisk(D, tau, eps):
     outliers = []
     for d_idx in range(len(D)):
         for l_idx in L:
-            if d_idx < l_idx:
+            if d_idx == l_idx:
+                curr_dist = 0
+            elif d_idx < l_idx:
                 curr_dist = dist_mat[m*d_idx+l_idx-((d_idx+2)*(d_idx+1))//2]
             else:
                 curr_dist = dist_mat[m*l_idx+d_idx-((l_idx+2)*(l_idx+1))//2]
