@@ -24,9 +24,10 @@ def perform_evaluation(data, true_class, predictions, verbose=False):
 
 # if __name__ == 'main':
 algos = ["IDBSCAN", "DBSCAN"]
-data_name = "cadata"
+data_name = "mushroom"
+print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
-    df, true_class = utils.load_preprocess_mushrooms() # one hot
+    df, true_class = utils.load_preprocess_mushrooms()  # one hot
     eps = 2.5
     minpts = 4
     # eps = 3.8

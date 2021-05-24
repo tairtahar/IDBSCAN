@@ -6,7 +6,193 @@ from random import sample
 import pandas as pd
 import os
 from scipy.spatial.distance import pdist, squareform
+
+
 # from sklearn.neighbors import BallTree, KDTree
+
+class density_asterisk():
+    def __init__(self, data, eps, minpts, tau):
+        self.data = data
+        self.m = len(data)
+        self.dist_mat = []
+        self.eps = eps
+        self.minpts = minpts
+        self.tau = tau
+        self.L = []
+        self.num_leaders = 0
+        self.followers_not_leaders = []
+        self.num_followers_not_leaders = 0
+        self.F = []
+        self.labels = [0] * self.m
+        self.outliers = []
+        self.tree = []
+        self.leader_labels = []
+        self.S_data = []
+
+    def leader_asterisk(self):
+        L = [0]  # list of all idices of the leaders. Initialized with the first index
+        F = [[] for _ in range(len(self.data))]
+        # list of lists, in the order of L, contains indices of the population represented by the same order element of L
+        self.dist_mat = pdist(self.data)
+        for d_idx in range(self.m-1):  # len(D[1:])
+            curr_idx = d_idx + 1  # since we start with 1 insead of zero
+            leader = True
+
+            for l_idx in range(len(L)):
+                if curr_idx == L[l_idx]:
+                    curr_dist = 0
+                elif curr_idx < L[l_idx]:
+                    curr_dist = self.dist_mat[self.m * curr_idx + L[l_idx] - ((curr_idx + 2) * (curr_idx + 1)) // 2]
+                else:
+                    curr_dist = self.dist_mat[self.m * L[l_idx] + curr_idx - ((L[l_idx] + 2) * (L[l_idx] + 1)) // 2]
+                if curr_dist <= self.tau:
+                    leader = False
+                    break
+            if leader:
+                L.append(curr_idx)
+        print("leader* first iteration on data Done")
+        flag = False
+        outliers = []
+        for d_idx in range(self.m):
+            for l_idx in L:
+                if d_idx == l_idx:
+                    curr_dist = 0
+                elif d_idx < l_idx:
+                    curr_dist = self.dist_mat[self.m * d_idx + l_idx - ((d_idx + 2) * (d_idx + 1)) // 2]
+                else:
+                    curr_dist = self.dist_mat[self.m * l_idx + d_idx - ((l_idx + 2) * (l_idx + 1)) // 2]
+                if curr_dist <= self.eps:
+                    F[l_idx].append(d_idx)
+                    flag = True
+            if flag == False:
+                print(d_idx)
+                outliers.append(d_idx)
+
+        print("leader* complete")
+        self.L = L
+        self.num_leaders = len(L)
+        self.F = F
+        self.outliers = outliers
+
+    def IDBSCAN(self):
+        S = self.L.copy()  # make sure this is a copy of the L list
+
+        for l_idx in range(self.num_leaders):
+            s = self.find_interesect_followers(l_idx)
+            if len(self.F[self.L[l_idx]]) > self.minpts:
+                if len(set(s)) > self.minpts:
+                    s = self.FFT_sampling(s)
+                else:
+                    s.extend(sample(self.F[self.L[l_idx]], self.minpts - len(s)))
+            clean_s = [item for item in s if item not in S]
+            self.followers_not_leaders.extend(clean_s)
+            S.extend(clean_s)
+            if l_idx % 500 == 0:
+                print("IDBSCAN sample " + str(l_idx) + " out of " + str(self.num_leaders))
+        self.num_followers_not_leaders = len(self.followers_not_leaders)
+        return S
+
+    def find_specific_dist(self, idx1, idx2):
+        if idx1 == idx2:
+            return 0
+        elif idx2 < idx1:
+            temp = idx2
+            idx2 = idx1
+            idx1 = temp
+        distance = self.dist_mat[self.m * idx1 + idx2 - ((idx1 + 2) * (idx1 + 1)) // 2]
+        return distance
+
+    def find_row(self, idx, group_idx):
+        row_dist = []
+        for current_idx in group_idx:
+            row_dist.append(self.find_specific_dist(group_idx[idx], current_idx))
+        return row_dist
+
+    def inverse_dist_to_idx(self, idx_vectorised):
+        n = len(self.dist_mat)
+        n_row_elems = np.cumsum(np.arange(1, n)[::-1])
+        ii = (n_row_elems[:, None] - 1 < idx_vectorised[None, :]).sum(axis=0)
+        shifts = np.concatenate([[0], n_row_elems])
+        jj = np.arange(1, n)[ii] + idx_vectorised - shifts[ii]
+        return ii, jj
+
+    def find_interesect_followers(self, l_idx):
+        s = []
+        l1 = self.L[l_idx]  # l1 is the index of the leader
+        for l2 in self.L:
+            if l2 == l1:
+                continue
+            intersection = list(set(self.F[l1]) & set(self.F[l2]))
+            s.extend(intersection)
+        s_final = list(set(s))
+        # print("intersection calculation complete")
+        return list(set(s_final))
+
+    def FFT_sampling(self, s):
+        """This function returns minpts examples (idx) that are far from each other"""
+        fft_out = []
+        s_copy = s.copy()
+        current_idx = sample(range(len(s)), 1)[0]
+        fft_out.append(s_copy[current_idx])
+        while len(set(fft_out)) < self.minpts:
+            row_distances = self.find_row(current_idx, s_copy)  #this isolate the row of the specific instance in the distance matrix
+            if len(set(row_distances)) <= self.minpts - len(set(fft_out)):
+                fft_out.extend(s_copy[0:self.minpts - len(set(fft_out))])
+                return fft_out
+            farthest_idx_s = np.argmax(row_distances)
+            fft_out.append(s_copy[farthest_idx_s])
+            del s_copy[current_idx]
+            if farthest_idx_s >= current_idx:
+                current_idx = farthest_idx_s - 1  # in case the deleted item is former, we need to -1 the latter items.
+            else:
+                current_idx = farthest_idx_s
+            # dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
+            # dist_mat[farthest_idx_s][current_idx] = 0
+        return fft_out
+
+    def neighboors_labeling(self, S, d_idx, cluster):
+        addition_temp = []
+        addition_out = []
+        for q_idx in S:  # handle of the nearest neighboors
+            if self.leader_labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
+                self.leader_labels[q_idx] = cluster
+            if self.leader_labels[q_idx] == 0:  # meaning label q is undefined
+                self.leader_labels[q_idx] = cluster
+                NN = self.tree.query_radius(self.S_data[q_idx].reshape(1, -1), r=self.eps)[0]
+                # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
+                # NN = np.asarray(idx_NN[0])
+                if NN.shape[0] >= self.minpts:
+                    addition_temp.append(NN)
+        if len(addition_temp) > 0:
+            addition_temp = np.concatenate(addition_temp).ravel().tolist()
+            addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
+            addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
+
+        return addition_out
+
+    def DBSCAN(self):
+        cluster = 0
+        self.leader_labels = [0] * (self.num_leaders + self.num_followers_not_leaders)
+        for d_idx in range(len(self.S_data)):
+            if self.leader_labels[d_idx] == 0:
+                # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
+                # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
+                # of the samples in the radius eps around current
+                self.tree = KDTree(self.S_data)
+                NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
+                # sample
+                # NN = np.asarray(idx_NN[0])
+                if NN.shape[0] < self.minpts:
+                    self.leader_labels[d_idx] = -1  # labels as noise
+                else:
+                    cluster += 1
+                    self.leader_labels[d_idx] = cluster
+                    S = NN.copy()
+                    # S = S.astype(int)
+                    S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
+                    addition = self.neighboors_labeling(S, d_idx, cluster)
+                    while len(addition) > 0:
+                        addition = self.neighboors_labeling(addition, d_idx, cluster)
 
 def leader(D, tau):
     L = [0]  # list of all idices of the leaders
@@ -36,17 +222,16 @@ def leader_asterisk(D, tau, eps):
     dist_mat = pdist(D)
     m = len(D)
     for d_idx in range(len(D[1:])):
-        # for d_idx in range(300): # FOR DEBUG ONLY
-        curr_idx = d_idx + 1  #since we start with 1 insead of zero
+        curr_idx = d_idx + 1  # since we start with 1 insead of zero
         leader = True
 
         for l_idx in range(len(L)):
             if curr_idx == L[l_idx]:
                 curr_dist = 0
             elif curr_idx < L[l_idx]:
-                curr_dist = dist_mat[m*curr_idx+L[l_idx]-((curr_idx+2)*(curr_idx+1))//2]
+                curr_dist = dist_mat[m * curr_idx + L[l_idx] - ((curr_idx + 2) * (curr_idx + 1)) // 2]
             else:
-                curr_dist = dist_mat[m*L[l_idx]+curr_idx-((L[l_idx]+2)*(L[l_idx]+1))//2]
+                curr_dist = dist_mat[m * L[l_idx] + curr_idx - ((L[l_idx] + 2) * (L[l_idx] + 1)) // 2]
             if curr_dist <= tau:
                 leader = False
                 break
@@ -60,9 +245,9 @@ def leader_asterisk(D, tau, eps):
             if d_idx == l_idx:
                 curr_dist = 0
             elif d_idx < l_idx:
-                curr_dist = dist_mat[m*d_idx+l_idx-((d_idx+2)*(d_idx+1))//2]
+                curr_dist = dist_mat[m * d_idx + l_idx - ((d_idx + 2) * (d_idx + 1)) // 2]
             else:
-                curr_dist = dist_mat[m*l_idx+d_idx-((l_idx+2)*(l_idx+1))//2]
+                curr_dist = dist_mat[m * l_idx + d_idx - ((l_idx + 2) * (l_idx + 1)) // 2]
             if curr_dist <= eps:
                 F[l_idx].append(d_idx)
                 flag = True
@@ -71,57 +256,12 @@ def leader_asterisk(D, tau, eps):
             outliers.append(d_idx)
 
     print("leader* complete")
-    return L, F, outliers
+    return L, F, outliers, dist_mat
 
-
-def find_interesect_followers(l_idx, L: list, F: list):
-    s = []
-    l1 = L[l_idx]  # l1 is the index of the leader
-    for l2 in L:
-        if l2 == l1:
-            continue
-        intersection = list(set(F[l1]) & set(F[l2]))
-        s.extend(intersection)
-    s_final = list(set(s))
-    # print("intersection calculation complete")
-    return s_final
-
-
-def FFT_sampling(D, s, minpts):
-    """This function returns minpts examples (idx) that are far from each other"""
-    fft_out = []
-    current_idx = sample(range(len(s)), 1)[0]
-    fft_out.append(s[current_idx])
-    dist_mat = squareform(pdist(D[s]))
-    while len(list(set(fft_out))) < minpts:
-        farthest_idx_s = np.argmax(dist_mat[current_idx])
-        fft_out.append(s[farthest_idx_s])
-        dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
-        dist_mat[farthest_idx_s][current_idx] = 0
-        current_idx = farthest_idx_s
-
-    return list(set(fft_out))
-
-
-def IDBSCAN(data, L, F, minpts):
-    S = L.copy()  # make sure this is a copy of the L list
-    followers_not_leaders = []
-    for l_idx in range(len(L)):
-        s = find_interesect_followers(l_idx, L, F)
-        if len(F[L[l_idx]]) > minpts:
-            if len(s) > minpts:
-                s = FFT_sampling(data, s, minpts)
-            else:
-                s.extend(sample(F[L[l_idx]], minpts - len(s)))
-        clean_s = [item for item in s if item not in S]
-        followers_not_leaders.extend(clean_s)
-        S.extend(clean_s)
-        if l_idx % 500 == 0:
-            print("IDBSCAN sample " + str(l_idx) + " out of " + str(len(L)))
-    # flat_S = [idx_S for sublist in S for idx_S in sublist]
-    # S is the idx of the leaders and appendices
-    return S, followers_not_leaders
-
+"""L is a list that contains indices of the leaders in the data
+F is a list in the length of the data that contains the followers of each example
+For leader l, its follwers exist in the list F[l]
+The elements that are not leader will have their list in F empty"""
 
 def neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
     addition_temp = []
@@ -143,7 +283,6 @@ def neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
         addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
 
     return labels, addition_out
-
 
 def DBSCAN(D, eps, minpts):
     cluster = 0
@@ -170,30 +309,24 @@ def DBSCAN(D, eps, minpts):
                     labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
     return labels
 
-
-"""L is a list that contains indices of the leaders in the data
-F is a list in the length of the data that contains the followers of each example
-For leader l, its follwers exist in the list F[l]
-The elements that are not leader will have their list in F empty"""
-
-
 def main_IDBSCAN(df, eps, minpts, save_flag, path):
     data = np.asarray(df)
     labels = [0] * len(data)
+    algorithm = density_asterisk(data, eps, minpts, eps)
 
-    if save_flag:  #creating and loading
+    if save_flag:  # creating and loading
         # data should be ndarray
-        L, F, outliers = leader_asterisk(data, eps, eps)
-        print("leaders list contains", len(L))
-        S, followers_not_leaders = IDBSCAN(data, L, F, minpts)
-        print("Intersection followers list contains", len(followers_not_leaders))
+        algorithm.leader_asterisk()
+        print("leaders list contains", len(algorithm.L))
+        S = algorithm.IDBSCAN()
+        print("Intersection followers list contains", len(algorithm.followers_not_leaders))
         print("All samples to be processed list contains", len(S))
         with open(os.path.join(path, "leaders_idx.txt"), "w") as f:
-            for l in L:
+            for l in algorithm.L:
                 f.write(str(l) + "\n")
 
         with open(os.path.join(path, "followers.txt"), "w") as f:
-            for followers_list in F:
+            for followers_list in algorithm.F:
                 f.write(str(followers_list) + "\n")
 
         with open(os.path.join(path, "IDBSCAN_idx.txt"), "w") as f:
@@ -201,26 +334,24 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
                 f.write(str(s) + "\n")
 
         with open(os.path.join(path, "intersection_idx.txt"), "w") as f:
-            for follower in followers_not_leaders:
+            for follower in algorithm.followers_not_leaders:
                 f.write(str(follower) + "\n")
 
-        if len(S)-len(followers_not_leaders) != len(L):
+        if len(S) - algorithm.num_followers_not_leaders != algorithm.num_leaders:
             raise ValueError('S != sum length of leaders and intersections')
 
     else:  # loading only
         with open(os.path.join(path, "leaders_idx.txt"), "r") as f:
-            L = []
             for line in f:
-                L.append(int(line.strip()))
+                algorithm.L.append(int(line.strip()))
 
         with open(os.path.join(path, "followers.txt"), "r") as f:
-            F = []
             for line in f:
                 current_line = []
                 if line != "[]\n":
                     for element in line.split(','):
                         current_line.append(int(element.strip(' []\n')))
-                F.append(current_line)
+                algorithm.F.append(current_line)
 
         with open(os.path.join(path, "IDBSCAN_idx.txt"), "r") as f:
             S = []
@@ -228,26 +359,31 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
                 S.append(int(line.strip()))
 
         with open(os.path.join(path, "intersection_idx.txt"), "r") as f:
-            followers_not_leaders = []
             for line in f:
-                followers_not_leaders.append(int(line.strip()))
+                algorithm.followers_not_leaders.append(int(line.strip()))
 
-        if len(S)-len(followers_not_leaders) != len(L):
+        if len(S) - algorithm.num_followers_not_leaders != algorithm.num_leaders:
             raise ValueError('S != sum length of leaders and intersections')
     # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
-    prediction = DBSCAN(np.asarray(df.loc[S]), eps, minpts)
-    if len(prediction) != len(S):
-        raise ValueError('prediction list contains', len(prediction), 'while S list contains', len(S))
-    prediction_leaders = prediction[0:len(L)]  # the first in the list are the prediction of the leaders.
-    for idx_L in range(len(L)): #that step would label each group of followers according to its leader prediction
+    algorithm.S_data = np.asarray(algorithm.data[S])
+    algorithm.DBSCAN()
+    predictions = algorithm.leader_labels
+    if len(predictions) != len(S):
+        raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
+    prediction_leaders = algorithm.leader_labels[0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
+    for idx_L in range(algorithm.num_leaders):  # that step would label each group of followers according to its leader prediction
         current_prediction = prediction_leaders[idx_L]
-        current_leader_idx = L[idx_L]
+        current_leader_idx = algorithm.L[idx_L]
         labels[current_leader_idx] = current_prediction
-        current_followers_idx = F[current_leader_idx]
+        current_followers_idx = algorithm.F[current_leader_idx]
         for follower_idx in current_followers_idx:
             labels[follower_idx] = current_prediction
+    algorithm.labels = labels
+    if save_flag:
+        with open(os.path.join(path, "labels.txt"), "w") as f:
+            for label in labels:
+                f.write(str(label) + "\n")
     if 0 in labels:
         print([i for i, e in enumerate(labels) if e == 0])
         raise ValueError('some elements were not classified')
-
     return labels
