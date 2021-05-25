@@ -188,10 +188,10 @@ class DensityAsterisk:
                         addition = self.neighboors_labeling(addition, d_idx, cluster)
 
 
-def main_IDBSCAN(df, eps, minpts, save_flag, path):
+def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
     data = np.asarray(df)
     labels = [0] * len(data)
-    algorithm = DensityAsterisk(data, eps, minpts, eps)
+    algorithm = DensityAsterisk(data, eps, minpts, tau)
 
     if save_flag:  # creating and loading
         # data should be ndarray

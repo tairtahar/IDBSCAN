@@ -2,7 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sklearn.datasets as data
-import hdbscan
+import hybrid_dbscan
+
+import requests
+
+r = requests.get("http://google.com")
+print(r.status_code)
 
 sns.set_context('poster')
 sns.set_style('white')
@@ -16,7 +21,7 @@ test_data = np.vstack([moons, blobs])
 plt.scatter(test_data.T[0], test_data.T[1], color='b', **plot_kwds)
 
 
-clusterer = hdbscan.HDBSCAN(min_cluster_size=5, gen_min_span_tree=True)
+clusterer = hybrid_dbscan.HDBSCAN(min_cluster_size=5, gen_min_span_tree=True)
 clusterer.fit(test_data)
 
 clusterer.single_linkage_tree_.plot(cmap='viridis', colorbar=True)
