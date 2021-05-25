@@ -10,8 +10,12 @@ from scipy.spatial.distance import pdist, squareform
 
 # from sklearn.neighbors import BallTree, KDTree
 
-class density_asterisk():
+class DensityAsterisk:
     def __init__(self, data, eps, minpts, tau):
+        """L is a list that contains indices of the leaders in the data
+        F is a list in the length of the data that contains the followers of each example
+        For leader l, its follwers exist in the list F[l]
+        The elements that are not leader will have their list in F empty"""
         self.data = data
         self.m = len(data)
         self.dist_mat = []
@@ -34,17 +38,12 @@ class density_asterisk():
         F = [[] for _ in range(len(self.data))]
         # list of lists, in the order of L, contains indices of the population represented by the same order element of L
         self.dist_mat = pdist(self.data)
-        for d_idx in range(self.m-1):  # len(D[1:])
+        for d_idx in range(self.m - 1):  # len(D[1:])
             curr_idx = d_idx + 1  # since we start with 1 insead of zero
             leader = True
 
             for l_idx in range(len(L)):
-                if curr_idx == L[l_idx]:
-                    curr_dist = 0
-                elif curr_idx < L[l_idx]:
-                    curr_dist = self.dist_mat[self.m * curr_idx + L[l_idx] - ((curr_idx + 2) * (curr_idx + 1)) // 2]
-                else:
-                    curr_dist = self.dist_mat[self.m * L[l_idx] + curr_idx - ((L[l_idx] + 2) * (L[l_idx] + 1)) // 2]
+                curr_dist = self.find_specific_dist(curr_idx, L[l_idx])
                 if curr_dist <= self.tau:
                     leader = False
                     break
@@ -55,19 +54,13 @@ class density_asterisk():
         outliers = []
         for d_idx in range(self.m):
             for l_idx in L:
-                if d_idx == l_idx:
-                    curr_dist = 0
-                elif d_idx < l_idx:
-                    curr_dist = self.dist_mat[self.m * d_idx + l_idx - ((d_idx + 2) * (d_idx + 1)) // 2]
-                else:
-                    curr_dist = self.dist_mat[self.m * l_idx + d_idx - ((l_idx + 2) * (l_idx + 1)) // 2]
+                curr_dist = self.find_specific_dist(d_idx, l_idx)
                 if curr_dist <= self.eps:
                     F[l_idx].append(d_idx)
                     flag = True
             if flag == False:
                 print(d_idx)
                 outliers.append(d_idx)
-
         print("leader* complete")
         self.L = L
         self.num_leaders = len(L)
@@ -95,11 +88,10 @@ class density_asterisk():
     def find_specific_dist(self, idx1, idx2):
         if idx1 == idx2:
             return 0
-        elif idx2 < idx1:
-            temp = idx2
-            idx2 = idx1
-            idx1 = temp
-        distance = self.dist_mat[self.m * idx1 + idx2 - ((idx1 + 2) * (idx1 + 1)) // 2]
+        elif idx1 < idx2:
+            distance = self.dist_mat[self.m * idx1 + idx2 - ((idx1 + 2) * (idx1 + 1)) // 2]
+        else:
+            distance = self.dist_mat[self.m * idx2 + idx1 - ((idx2 + 2) * (idx2 + 1)) // 2]
         return distance
 
     def find_row(self, idx, group_idx):
@@ -135,7 +127,8 @@ class density_asterisk():
         current_idx = sample(range(len(s)), 1)[0]
         fft_out.append(s_copy[current_idx])
         while len(set(fft_out)) < self.minpts:
-            row_distances = self.find_row(current_idx, s_copy)  #this isolate the row of the specific instance in the distance matrix
+            row_distances = self.find_row(current_idx,
+                                          s_copy)  # this isolate the row of the specific instance in the distance matrix
             if len(set(row_distances)) <= self.minpts - len(set(fft_out)):
                 fft_out.extend(s_copy[0:self.minpts - len(set(fft_out))])
                 return fft_out
@@ -194,125 +187,11 @@ class density_asterisk():
                     while len(addition) > 0:
                         addition = self.neighboors_labeling(addition, d_idx, cluster)
 
-def leader(D, tau):
-    L = [0]  # list of all idices of the leaders
-    F = [[] for _ in range(len(D))]
-    F[0] = [0]
-    # list of lists, in the order of L, contains indices of the population represented by the same order element of L
-    for d_idx in range(len(D[1:])):
-        # for d_idx in range(300):
-        curr_idx = d_idx + 1
-        leader = True
-        for l_idx in range(len(L)):
-            if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
-                F[l_idx].append(curr_idx)
-                leader = False
-                break
-        if leader:
-            L.append(curr_idx)
-            F[curr_idx].append(curr_idx)
-    print("leader algo is Done")
-    return L, F
-
-
-def leader_asterisk(D, tau, eps):
-    L = [0]  # list of all idices of the leaders. Initialized with the first index
-    F = [[] for _ in range(len(D))]
-    # list of lists, in the order of L, contains indices of the population represented by the same order element of L
-    dist_mat = pdist(D)
-    m = len(D)
-    for d_idx in range(len(D[1:])):
-        curr_idx = d_idx + 1  # since we start with 1 insead of zero
-        leader = True
-
-        for l_idx in range(len(L)):
-            if curr_idx == L[l_idx]:
-                curr_dist = 0
-            elif curr_idx < L[l_idx]:
-                curr_dist = dist_mat[m * curr_idx + L[l_idx] - ((curr_idx + 2) * (curr_idx + 1)) // 2]
-            else:
-                curr_dist = dist_mat[m * L[l_idx] + curr_idx - ((L[l_idx] + 2) * (L[l_idx] + 1)) // 2]
-            if curr_dist <= tau:
-                leader = False
-                break
-        if leader:
-            L.append(curr_idx)
-    print("leader* first iteration on data Done")
-    flag = False
-    outliers = []
-    for d_idx in range(len(D)):
-        for l_idx in L:
-            if d_idx == l_idx:
-                curr_dist = 0
-            elif d_idx < l_idx:
-                curr_dist = dist_mat[m * d_idx + l_idx - ((d_idx + 2) * (d_idx + 1)) // 2]
-            else:
-                curr_dist = dist_mat[m * l_idx + d_idx - ((l_idx + 2) * (l_idx + 1)) // 2]
-            if curr_dist <= eps:
-                F[l_idx].append(d_idx)
-                flag = True
-        if flag == False:
-            print(d_idx)
-            outliers.append(d_idx)
-
-    print("leader* complete")
-    return L, F, outliers, dist_mat
-
-"""L is a list that contains indices of the leaders in the data
-F is a list in the length of the data that contains the followers of each example
-For leader l, its follwers exist in the list F[l]
-The elements that are not leader will have their list in F empty"""
-
-def neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
-    addition_temp = []
-    addition_out = []
-    for q_idx in S:  # handle of the nearest neighboors
-        if labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
-            labels[q_idx] = cluster
-        if labels[q_idx] == 0:  # meaning label q is undefined
-            labels[q_idx] = cluster
-            NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
-
-            # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
-            # NN = np.asarray(idx_NN[0])
-            if NN.shape[0] >= minpts:
-                addition_temp.append(NN)
-    if len(addition_temp) > 0:
-        addition_temp = np.concatenate(addition_temp).ravel().tolist()
-        addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
-        addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
-
-    return labels, addition_out
-
-def DBSCAN(D, eps, minpts):
-    cluster = 0
-    labels = [0] * len(D)
-    for d_idx in range(len(D)):
-        if labels[d_idx] == 0:
-            # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
-            # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
-            # of the samples in the radius eps around current
-            tree = KDTree(D)
-            NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
-            # sample
-            # NN = np.asarray(idx_NN[0])
-            if NN.shape[0] < minpts:
-                labels[d_idx] = -1  # labels as noise
-            else:
-                cluster += 1
-                labels[d_idx] = cluster
-                S = NN.copy()
-                # S = S.astype(int)
-                S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
-                labels, addition = neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
-                while len(addition) > 0:
-                    labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
-    return labels
 
 def main_IDBSCAN(df, eps, minpts, save_flag, path):
     data = np.asarray(df)
     labels = [0] * len(data)
-    algorithm = density_asterisk(data, eps, minpts, eps)
+    algorithm = DensityAsterisk(data, eps, minpts, eps)
 
     if save_flag:  # creating and loading
         # data should be ndarray
@@ -370,8 +249,10 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
     predictions = algorithm.leader_labels
     if len(predictions) != len(S):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
-    prediction_leaders = algorithm.leader_labels[0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
-    for idx_L in range(algorithm.num_leaders):  # that step would label each group of followers according to its leader prediction
+    prediction_leaders = algorithm.leader_labels[
+                         0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
+    for idx_L in range(
+            algorithm.num_leaders):  # that step would label each group of followers according to its leader prediction
         current_prediction = prediction_leaders[idx_L]
         current_leader_idx = algorithm.L[idx_L]
         labels[current_leader_idx] = current_prediction
@@ -386,4 +267,117 @@ def main_IDBSCAN(df, eps, minpts, save_flag, path):
     if 0 in labels:
         print([i for i, e in enumerate(labels) if e == 0])
         raise ValueError('some elements were not classified')
+    return labels
+
+
+def leader(D, tau):
+    L = [0]  # list of all idices of the leaders
+    F = [[] for _ in range(len(D))]
+    F[0] = [0]
+    # list of lists, in the order of L, contains indices of the population represented by the same order element of L
+    for d_idx in range(len(D[1:])):
+        # for d_idx in range(300):
+        curr_idx = d_idx + 1
+        leader = True
+        for l_idx in range(len(L)):
+            if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
+                F[l_idx].append(curr_idx)
+                leader = False
+                break
+        if leader:
+            L.append(curr_idx)
+            F[curr_idx].append(curr_idx)
+    print("leader algo is Done")
+    return L, F
+
+
+def find_specific_dist(dist_mat, m, idx1, idx2):
+    if idx1 == idx2:
+        return 0
+    elif idx1 < idx2:
+        distance = dist_mat[m * idx1 + idx2 - ((idx1 + 2) * (idx1 + 1)) // 2]
+    else:
+        distance = dist_mat[m * idx2 + idx1 - ((idx2 + 2) * (idx2 + 1)) // 2]
+    return distance
+
+
+def leader_asterisk(D, tau, eps):
+    L = [0]  # list of all idices of the leaders. Initialized with the first index
+    F = [[] for _ in range(len(D))]
+    # list of lists, in the order of L, contains indices of the population represented by the same order element of L
+    dist_mat = pdist(D)
+    m = len(D)
+    for d_idx in range(len(D[1:])):
+        curr_idx = d_idx + 1  # since we start with 1 insead of zero
+        leader = True
+
+        for l_idx in range(len(L)):
+            curr_dist = find_specific_dist(dist_mat, m, curr_idx, L[l_idx])
+            if curr_dist <= tau:
+                leader = False
+                break
+        if leader:
+            L.append(curr_idx)
+    print("leader* first iteration on data Done")
+    flag = False
+    outliers = []
+    for d_idx in range(len(D)):
+        for l_idx in L:
+            curr_dist = find_specific_dist(dist_mat, m, d_idx, l_idx)
+            if curr_dist <= eps:
+                F[l_idx].append(d_idx)
+                flag = True
+        if flag == False:
+            print(d_idx)
+            outliers.append(d_idx)
+
+    print("leader* complete")
+    return L, F, outliers, dist_mat
+
+
+def neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
+    addition_temp = []
+    addition_out = []
+    for q_idx in S:  # handle of the nearest neighboors
+        if labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
+            labels[q_idx] = cluster
+        if labels[q_idx] == 0:  # meaning label q is undefined
+            labels[q_idx] = cluster
+            NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
+
+            # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
+            # NN = np.asarray(idx_NN[0])
+            if NN.shape[0] >= minpts:
+                addition_temp.append(NN)
+    if len(addition_temp) > 0:
+        addition_temp = np.concatenate(addition_temp).ravel().tolist()
+        addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
+        addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
+
+    return labels, addition_out
+
+
+def DBSCAN(D, eps, minpts):
+    cluster = 0
+    labels = [0] * len(D)
+    for d_idx in range(len(D)):
+        if labels[d_idx] == 0:
+            # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
+            # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
+            # of the samples in the radius eps around current
+            tree = KDTree(D)
+            NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
+            # sample
+            # NN = np.asarray(idx_NN[0])
+            if NN.shape[0] < minpts:
+                labels[d_idx] = -1  # labels as noise
+            else:
+                cluster += 1
+                labels[d_idx] = cluster
+                S = NN.copy()
+                # S = S.astype(int)
+                S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
+                labels, addition = neighboors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
+                while len(addition) > 0:
+                    labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
     return labels

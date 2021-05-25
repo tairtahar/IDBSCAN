@@ -3,11 +3,6 @@ import algorithms
 import numpy as np
 from sklearn.cluster import DBSCAN
 import time
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-import pandas as pd
-
-
-
 
 
 algos = ["IDBSCAN", "DBSCAN"]
@@ -17,14 +12,10 @@ if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
     eps = 2.5
     minpts = 4
-    # eps = 3.8
-    # minpts = 680
-
 elif data_name == "letter":  # 20,000 samples
     df, true_class = utils.load_preprocess_letters()
     eps = 0.5
     minpts = 8
-# data.info()
 elif data_name == "pendigit":  # 10,992 samples, 0.739 ARI, and IDBSCAN takes longer
     df, true_class = utils.load_preprocess_pendigit()
     eps = 40
@@ -49,10 +40,10 @@ elif data_name == "skin_nonskin":
     df, true_class = utils.load_preprocess_skin_nonskin()
     eps = 60
     minpts = 10
-elif data_name == "seismic":
-    df, true_class = utils.load_preprocess_seismic()
-    eps = 0.4
-    minpts = 5
+# elif data_name == "seismic":
+#     df, true_class = utils.load_preprocess_seismic()
+#     eps = 0.4
+#     minpts = 5
 tau = eps
 
 clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
