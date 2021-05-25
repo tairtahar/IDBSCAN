@@ -251,15 +251,20 @@ def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
     prediction_leaders = algorithm.leader_labels[
                          0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
+    labels = passing_predictions(algorithm.L, algorithm.F, prediction_leaders, labels, save_flag, path)
+    algorithm.labels = labels
+    return labels
+
+
+def passing_predictions(L, F, prediction_leaders, labels, save_flag, path):
     for idx_L in range(
-            algorithm.num_leaders):  # that step would label each group of followers according to its leader prediction
+            len(L)):  # that step would label each group of followers according to its leader prediction
         current_prediction = prediction_leaders[idx_L]
-        current_leader_idx = algorithm.L[idx_L]
+        current_leader_idx = L[idx_L]
         labels[current_leader_idx] = current_prediction
-        current_followers_idx = algorithm.F[current_leader_idx]
+        current_followers_idx = F[current_leader_idx]
         for follower_idx in current_followers_idx:
             labels[follower_idx] = current_prediction
-    algorithm.labels = labels
     if save_flag:
         with open(os.path.join(path, "labels.txt"), "w") as f:
             for label in labels:

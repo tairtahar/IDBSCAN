@@ -6,8 +6,7 @@ import time
 
 
 algos = ["IDBSCAN", "DBSCAN"]
-# algos = ["leader"]
-data_name = "abalone"
+data_name = "letter"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
@@ -55,16 +54,12 @@ utils.perform_evaluation(true_class, predictions_ref,
 for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
-    if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, tau, True, "Results/results_abalone")
+    if algo == "Leader":
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, tau, True, "Results/results_letter")
         print("For my IDBSCAN:")
     elif algo == "DBSCAN":
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
         print("For my DBSCAN:")
-    elif algo == "leader":
-        L, F = algorithms.leader(df, tau)
-        predictions = algorithms.DBSCAN(df.loc[L], eps, minpts)
-
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
