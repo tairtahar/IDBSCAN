@@ -6,6 +6,7 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.datasets import load_svmlight_file
+from sklearn.metrics.cluster import adjusted_rand_score
 
 
 def load_data_arff(file_name: str):
@@ -72,7 +73,28 @@ def load_preprocess_abalone():
 
 
 def load_preprocess_sensorless():
-    data, true_class = load_svmlight_file("datasets/Sensorless.txt")
+    data, true_class = load_svmlight_file("datasets/Sensorless.scale.txt")
+    df = pd.DataFrame(data.todense())
+    true_class = np.asarray(true_class)
+    return df, true_class
+
+
+def load_preprocess_shuttle():
+    data, true_class = load_svmlight_file("datasets/shuttle.scale.txt")
+    df = pd.DataFrame(data.todense())
+    true_class = np.asarray(true_class)
+    return df, true_class
+
+
+def load_preprocess_seismic():
+    data, true_class = load_svmlight_file("datasets/seismic.bz2")
+    df = pd.DataFrame(data.todense())
+    true_class = np.asarray(true_class)
+    return df, true_class
+
+
+def load_preprocess_skin_nonskin():
+    data, true_class = load_svmlight_file("datasets/skin_nonskin.txt")
     df = pd.DataFrame(data.todense())
     true_class = np.asarray(true_class)
     return df, true_class
@@ -101,7 +123,12 @@ def categorial_handle(data: np.ndarray, encode_option: int):
 def l2norm(v1, v2):
     # return np.sqrt(np.sum(np.power(v1,2) - np.power(v2,2)))
     # return ((v1 - v2) ** 2).sum()
-    return np.linalg.norm(v1-v2, ord=2)
+    return np.linalg.norm(v1 - v2, ord=2)
 
+def perform_evaluation(true_class, predictions, verbose=False):
+    ARI = adjusted_rand_score(true_class, predictions)
+    if verbose:
+        print("ARI: " + str(ARI))
+    return ARI
 # for DEBUG only
 # load_data('mushroom_arff.arff')

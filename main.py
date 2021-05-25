@@ -1,30 +1,17 @@
 import utils
 import algorithms
 import numpy as np
-import evaluation
 from sklearn.cluster import DBSCAN
 import time
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import pandas as pd
 
 
-def perform_evaluation(data, true_class, predictions, verbose=False):
-    ARI = evaluation.ARI(true_class, predictions)
-    # silhouette_coefficient = evaluation.silhouette_coefficient(data, predictions)
-    # calinsky_harabasz = evaluation.calinsky_harabasz_index(data, predictions)
-    # davies_boulding = evaluation.davies_boulding_index(data, predictions)
-    if verbose:
-        print("ARI: " + str(ARI))
-        # print("Silhouette: " + str(silhouette_coefficient))
-        # print("calinsky harabasz index: " + str(calinsky_harabasz))
-        # print("davies boulding index: " + str(davies_boulding))
-
-    return ARI  # , silhouette_coefficient, calinsky_harabasz, davies_boulding
 
 
-# if __name__ == 'main':
+
 algos = ["IDBSCAN", "DBSCAN"]
-data_name = "mushroom"
+data_name = "abalone"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
@@ -54,18 +41,30 @@ elif data_name == "cadata":  # 20,000 woorks but slowly
     df, true_class = utils.load_preprocess_catadata()
     eps = 200
     minpts = 8
+elif data_name == "shuttle":
+    df, true_class = utils.load_preprocess_shuttle()
+    eps = 0.03
+    minpts = 20
+elif data_name == "skin_nonskin":
+    df, true_class = utils.load_preprocess_skin_nonskin()
+    eps = 60
+    minpts = 10
+elif data_name == "seismic":
+    df, true_class = utils.load_preprocess_seismic()
+    eps = 0.4
+    minpts = 5
 tau = eps
 
 clustring = DBSCAN(eps=eps, min_samples=minpts).fit(np.asarray(df))
 predictions_ref = clustring.labels_
 print("baseline sklearn DBSCAN evaluation: ", )
-perform_evaluation(df, true_class, predictions_ref,
+utils.perform_evaluation(true_class, predictions_ref,
                    True)
 for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_new_calcs")
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, True, "Results/results_abalone")
         print("For my IDBSCAN:")
 
     elif algo == "DBSCAN":
@@ -75,7 +74,7 @@ for i in range(len(algos)):
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
     # perform_evaluation(data, true_class, predictions, True)  #make sure the data here should be the original without one hot
-    perform_evaluation(df, predictions_ref, predictions,
+    utils.perform_evaluation(predictions_ref, predictions,
                        True)  # make sure the data here should be the original without one hot
 
 # ## uncomment the following lines for a full execution
