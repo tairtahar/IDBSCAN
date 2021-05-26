@@ -62,9 +62,11 @@ for i in range(len(algos)):
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
         print("For my DBSCAN:")
     elif algo == "leader":
-        L, F = algorithms.leader(df, tau)
-        predictions = algorithms.DBSCAN(df.loc[L], eps, minpts)
-
+        leader_dbscan = algorithms.Density(df, eps, minpts, tau)
+        L, F = leader_dbscan.leader(df, tau)
+        predictions_leaders = algorithms.DBSCAN(df.loc[L], eps, minpts)
+        labels = [0]*len(df)
+        predictions = algorithms.passing_predictions(L, F, predictions_leaders, labels, True, "leader_algo.txt")
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
