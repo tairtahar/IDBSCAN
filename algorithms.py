@@ -23,8 +23,6 @@ class DensityGeneral:
         self.tau = tau
         self.L = []
         self.num_leaders = 0
-        # self.followers_not_leaders = []
-        # self.num_followers_not_leaders = 0
         self.F = []
         self.labels = []
         self.outliers = []
@@ -32,7 +30,6 @@ class DensityGeneral:
         self.leader_labels = []
         self.save_flag = save_flag
         self.path = path
-        # self.S_data = []
 
     def neighboors_labeling(self, S, d_idx, cluster):
         addition_temp = []
@@ -230,8 +227,6 @@ class DensityAsterisk(DensityGeneral):
         return fft_out
 
 
-
-
 def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
     data = np.asarray(df)
     labels = [0] * len(data)
@@ -295,7 +290,7 @@ def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
     prediction_leaders = algorithm.leader_labels[
                          0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
-    labels = passing_predictions(algorithm.L, algorithm.F, prediction_leaders, labels, save_flag, path)
+    labels = algorithm.passing_predictions(prediction_leaders, labels)
     algorithm.labels = labels
     return labels
 

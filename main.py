@@ -7,7 +7,7 @@ import time
 
 algos = ["IDBSCAN", "DBSCAN"]
 # algos = ["leader"]
-data_name = "abalone"
+data_name = "mushroom"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
@@ -56,7 +56,7 @@ for i in range(len(algos)):
     algo = algos[i]
     start = time.time()
     if algo == "IDBSCAN":
-        predictions = algorithms.main_IDBSCAN(df, eps, minpts, tau, True, "Results/results_abalone")
+        predictions = algorithms.main_IDBSCAN(df, eps, minpts, tau, True, "Results/results_mushrooms")
         print("For my IDBSCAN:")
     elif algo == "DBSCAN":
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
