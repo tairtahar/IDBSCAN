@@ -30,6 +30,7 @@ class DensityGeneral:
         self.leader_labels = []
         self.save_flag = save_flag
         self.path = path
+        self.S_data = []  # that is partial data, the data of the leaders/leaders+addition for IDBSCAN
 
     def neighboors_labeling(self, S, d_idx, cluster):
         addition_temp = []
@@ -53,7 +54,7 @@ class DensityGeneral:
 
     def DBSCAN(self):
         cluster = 0
-        self.leader_labels = [0] * (self.num_leaders + self.num_followers_not_leaders)
+        self.leader_labels = [0] * self.num_leaders
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
                 # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
@@ -98,10 +99,10 @@ class DensityGeneral:
         jj = np.arange(1, n)[ii] + idx_vectorised - shifts[ii]
         return ii, jj
 
-    def passing_predictions(self, prediction_leaders, labels):
+    def passing_predictions(self, labels):
         for idx_L in range(
                 len(self.L)):  # that step would label each group of followers according to its leader prediction
-            current_prediction = prediction_leaders[idx_L]
+            current_prediction = self.leader_labels[idx_L]
             current_leader_idx = self.L[idx_L]
             labels[current_leader_idx] = current_prediction
             current_followers_idx = self.F[current_leader_idx]
@@ -112,9 +113,23 @@ class DensityGeneral:
                 for label in labels:
                     f.write(str(label) + "\n")
         if 0 in labels:
-            print([i for i, e in enumerate(labels) if e == 0])
-            raise ValueError('some elements were not classified')
+            not_labeled = [i for i, e in enumerate(labels) if e == 0]
+            print(not_labeled)
+            raise ValueError(str(len(not_labeled)), ' elements were not classified')
+        self.labels = labels
         return labels
+
+    def validate_F_contains_all(self):
+        check_vec = [0] * self.m
+        for i in range(self.m):
+            for follower in self.F[i]:
+                check_vec[follower] += 1
+        if 0 in check_vec:
+            not_claffified = [i for i, e in enumerate(check_vec) if e == 0]
+            print(not_claffified)
+            raise ValueError(str(len(not_claffified)), ' elements were not classified')
+        else:
+            print("all followers were assinged to at least one leader")
 
 
 class DensityAsterisk(DensityGeneral):
@@ -315,38 +330,49 @@ def passing_predictions(L, F, prediction_leaders, labels, save_flag, path):
 
 
 class DensityLeaderOriginal(DensityGeneral):
-    # def __init__(self, data, eps, minpts, tau):
-    #     self.name = "leader_original"
+    def __init__(self, data, eps, minpts, tau, save_flag, path):
+        self.data = data
+        self.m = len(data)
+        self.dist_mat = []
+        self.eps = eps
+        self.minpts = minpts
+        self.tau = tau
+        self.L = []
+        self.num_leaders = 0
+        self.F = []
+        self.labels = []
+        self.outliers = []
+        self.tree = []
+        self.leader_labels = []
+        self.save_flag = save_flag
+        self.path = path
+        self.S_data = []  # that is partial data, the data of the leaders/leaders+addition for IDBSCAN
 
     def leader(self):
         self.L = [0]  # list of all idices of the leaders
         self.F = [[] for _ in range(len(self.data))]
         self.F[0] = [0]
+        self.dist_mat = pdist(self.data)
+
         # list of lists, in the order of L, contains indices of the population represented by the same order element of L
         for d_idx in range(self.m - 1):  # from index 1 till the end
             # for d_idx in range(300):
             curr_idx = d_idx + 1
             leader = True
             for l_idx in range(len(self.L)):
-                if find_specific_dist(self.L[l_idx], [curr_idx]) <= self.tau:
+                if self.find_specific_dist(self.L[l_idx], curr_idx) <= self.tau:
                     # if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
-                    self.F[l_idx].append(curr_idx)
+                    self.F[self.L[l_idx]].append(curr_idx)
                     leader = False
                     break
             if leader:
                 self.L.append(curr_idx)
                 self.F[curr_idx].append(curr_idx)
         print("leader algo is Done")
+        print("leaders found ", str(len(self.L)))
+        self.num_leaders = len(self.L)
+        self.validate_F_contains_all()
         # return L, F
-
-    def find_specific_dist(self, idx1, idx2):
-        if idx1 == idx2:
-            return 0
-        elif idx1 < idx2:
-            distance = self.dist_mat[self.m * idx1 + idx2 - ((idx1 + 2) * (idx1 + 1)) // 2]
-        else:
-            distance = self.dist_mat[self.m * idx2 + idx1 - ((idx2 + 2) * (idx2 + 1)) // 2]
-        return distance
 
 
 def find_specific_dist(dist_mat, m, idx1, idx2):
@@ -439,6 +465,7 @@ def DBSCAN(D, eps, minpts):
                 while len(addition) > 0:
                     labels, addition = neighboors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
     return labels
+
 
 def passing_predictions(L, F, prediction_leaders, labels, save_flag, path):
     for idx_L in range(

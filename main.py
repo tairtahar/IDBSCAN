@@ -5,9 +5,9 @@ from sklearn.cluster import DBSCAN
 import time
 
 
-algos = ["IDBSCAN", "DBSCAN"]
-# algos = ["leader"]
-data_name = "mushroom"
+# algos = ["IDBSCAN", "DBSCAN"]
+algos = ["leader"]
+data_name = "letter"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
@@ -62,11 +62,13 @@ for i in range(len(algos)):
         predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
         print("For my DBSCAN:")
     elif algo == "leader":
-        leader_dbscan = algorithms.Density(df, eps, minpts, tau)
-        L, F = leader_dbscan.leader(df, tau)
-        predictions_leaders = algorithms.DBSCAN(df.loc[L], eps, minpts)
-        labels = [0]*len(df)
-        predictions = algorithms.passing_predictions(L, F, predictions_leaders, labels, True, "leader_algo.txt")
+        leader_dbscan = algorithms.DensityLeaderOriginal(np.asarray(df), eps, minpts, tau, True, "Results/original_leader_abalone")
+        leader_dbscan.leader()
+        leader_dbscan.S_data = leader_dbscan.data[leader_dbscan.L]
+        leader_dbscan.DBSCAN()
+        # prediction_leaders = leader_dbscan.leader_labels
+        labels = [0] * len(df)  # place holder
+        predictions = leader_dbscan.passing_predictions(labels)
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
