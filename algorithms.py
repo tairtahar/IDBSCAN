@@ -24,6 +24,7 @@ class DensityGeneral:
         self.L = []
         self.num_leaders = 0
         self.F = []
+        self.F_parallel = []
         self.labels = []
         self.outliers = []
         self.tree = []
@@ -31,6 +32,32 @@ class DensityGeneral:
         self.save_flag = save_flag
         self.path = path
         self.S_data = []  # that is partial data, the data of the leaders/leaders+addition for IDBSCAN
+
+    def leader(self):
+        self.L = [0]  # list of all idices of the leaders
+        self.F = [[] for _ in range(len(self.data))]
+        self.F[0] = [0]
+        self.dist_mat = pdist(self.data)
+
+        # list of lists, in the order of L, contains indices of the population represented by the same order element of L
+        for d_idx in range(self.m - 1):  # from index 1 till the end
+            # for d_idx in range(300):
+            curr_idx = d_idx + 1
+            leader = True
+            for l_idx in range(len(self.L)):
+                if self.find_specific_dist(self.L[l_idx], curr_idx) <= self.tau:
+                    # if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
+                    self.F[self.L[l_idx]].append(curr_idx)
+                    leader = False
+                    break
+            if leader:
+                self.L.append(curr_idx)
+                self.F[curr_idx].append(curr_idx)
+        print("leader algo is Done")
+        print("leaders found ", str(len(self.L)))
+        self.num_leaders = len(self.L)
+        self.validate_F_contains_all()
+        # return L, F
 
     def neighboors_labeling(self, S, d_idx, cluster):
         addition_temp = []
@@ -54,7 +81,7 @@ class DensityGeneral:
 
     def DBSCAN(self):
         cluster = 0
-        self.leader_labels = [0] * self.num_leaders
+        self.leader_labels = [0] * (self.num_leaders)
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
                 # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
@@ -105,7 +132,7 @@ class DensityGeneral:
             current_prediction = self.leader_labels[idx_L]
             current_leader_idx = self.L[idx_L]
             labels[current_leader_idx] = current_prediction
-            current_followers_idx = self.F[current_leader_idx]
+            current_followers_idx = self.F_parallel[current_leader_idx]
             for follower_idx in current_followers_idx:
                 labels[follower_idx] = current_prediction
         if self.save_flag:
@@ -122,7 +149,7 @@ class DensityGeneral:
     def validate_F_contains_all(self):
         check_vec = [0] * self.m
         for i in range(self.m):
-            for follower in self.F[i]:
+            for follower in self.F_parallel[i]:
                 check_vec[follower] += 1
         if 0 in check_vec:
             not_claffified = [i for i, e in enumerate(check_vec) if e == 0]
@@ -147,6 +174,7 @@ class DensityAsterisk(DensityGeneral):
         self.L = []
         self.num_leaders = 0
         self.F = []
+        self.F_parallel = []
         self.labels = [0] * self.m
         self.outliers = []
         self.tree = []
@@ -160,6 +188,8 @@ class DensityAsterisk(DensityGeneral):
     def leader_asterisk(self):
         self.L = [0]  # list of all idices of the leaders. Initialized with the first index
         self.F = [[] for _ in range(len(self.data))]
+        self.F_parallel = [[] for _ in range(len(self.data))]
+        self.F_parallel[0].append(0)
         # list of lists, in the order of L, contains indices of the population represented by the same order element of L
         self.dist_mat = pdist(self.data)
         for d_idx in range(self.m - 1):  # len(D[1:])
@@ -168,9 +198,11 @@ class DensityAsterisk(DensityGeneral):
             for l_idx in range(len(self.L)):
                 curr_dist = self.find_specific_dist(curr_idx, self.L[l_idx])
                 if curr_dist <= self.tau:
+                    self.F_parallel[self.L[l_idx]].append(curr_idx)  # the original leader output
                     leader = False
                     break
             if leader:
+                self.F_parallel[curr_idx].append(curr_idx)
                 self.L.append(curr_idx)
         print("leader* first iteration on data Done")
         flag = False
@@ -187,6 +219,7 @@ class DensityAsterisk(DensityGeneral):
         print("leader* complete")
         self.num_leaders = len(self.L)
         self.outliers = outliers
+        self.validate_F_contains_all()
 
     def IDBSCAN(self):
         S = self.L.copy()  # make sure this is a copy of the L list
@@ -240,6 +273,30 @@ class DensityAsterisk(DensityGeneral):
             # dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
             # dist_mat[farthest_idx_s][current_idx] = 0
         return fft_out
+
+    def DBSCAN(self):
+        cluster = 0
+        self.leader_labels = [0] * (self.num_leaders + self.num_followers_not_leaders)
+        for d_idx in range(len(self.S_data)):
+            if self.leader_labels[d_idx] == 0:
+                # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
+                # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
+                # of the samples in the radius eps around current
+                self.tree = KDTree(self.S_data)
+                NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
+                # sample
+                # NN = np.asarray(idx_NN[0])
+                if NN.shape[0] < self.minpts:
+                    self.leader_labels[d_idx] = -1  # labels as noise
+                else:
+                    cluster += 1
+                    self.leader_labels[d_idx] = cluster
+                    S = NN.copy()
+                    # S = S.astype(int)
+                    S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
+                    addition = self.neighboors_labeling(S, d_idx, cluster)
+                    while len(addition) > 0:
+                        addition = self.neighboors_labeling(addition, d_idx, cluster)
 
 
 def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
@@ -305,7 +362,7 @@ def main_IDBSCAN(df, eps, minpts, tau, save_flag, path):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
     prediction_leaders = algorithm.leader_labels[
                          0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
-    labels = algorithm.passing_predictions(prediction_leaders, labels)
+    labels = algorithm.passing_predictions(labels)
     algorithm.labels = labels
     return labels
 

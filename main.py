@@ -9,8 +9,9 @@ import hdbscan
 
 # algos = ["IDBSCAN", "DBSCAN"]
 # algos = ["leader"]
-algos = ["hybrid"]
-data_name = "pendigit"
+algos = ["IDBSCAN"]
+# algos = ["hybrid"]
+data_name = "shuttle"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
