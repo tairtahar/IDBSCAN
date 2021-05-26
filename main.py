@@ -3,11 +3,14 @@ import algorithms
 import numpy as np
 from sklearn.cluster import DBSCAN
 import time
+import hdbscan
+
 
 
 # algos = ["IDBSCAN", "DBSCAN"]
-algos = ["leader"]
-data_name = "letter"
+# algos = ["leader"]
+algos = ["hybrid"]
+data_name = "pendigit"
 print("dataset chosen is ", data_name)
 if data_name == "mushroom":  # 8,124 samples, working
     df, true_class = utils.load_preprocess_mushrooms()  # one hot
@@ -33,7 +36,7 @@ elif data_name == "cadata":  # 20,000 woorks but slowly
     df, true_class = utils.load_preprocess_catadata()
     eps = 200
     minpts = 8
-elif data_name == "shuttle":
+elif data_name == "shuttle":  # 58,000
     df, true_class = utils.load_preprocess_shuttle()
     eps = 0.03
     minpts = 20
@@ -69,6 +72,9 @@ for i in range(len(algos)):
         # prediction_leaders = leader_dbscan.leader_labels
         labels = [0] * len(df)  # place holder
         predictions = leader_dbscan.passing_predictions(labels)
+    elif algo == "hybrid":
+        clusterer = hdbscan.HDBSCAN(min_samples=minpts, cluster_selection_epsilon=eps)
+        predictions = clusterer.fit(df).labels_
     end = time.time()
     time_elapsed = end - start
     print("runtime: " + str(time_elapsed))
