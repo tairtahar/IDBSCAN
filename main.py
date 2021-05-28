@@ -104,10 +104,11 @@ def run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose_IDBSCAN)
 algos = ["IDBSCAN", "DBSCAN", "stdbscan", "hdbscan", "leader"]  # "vdbscan",
 datasets = ["abalone", "mushroom", "pendigit", "letter", "cadata", "sensorless", "shuttle"]
 # algos = ["IDBSCAN", "DBSCAN", "leader"]
-data_name = datasets[2]  # possible datasets:
+data_num = 1
 flag_calc_neig = 1  # 1 uses sklearn KDtree and 0 uses distance matrix calculated by leader* alg (pdist).
 flag_save = 1  # to save the labels outputs
 path = "Results/results_mushrooms"  # where to save in case flag_save==1. Make sure the path exists.
 verbose = False
+data_name = datasets[data_num]
 
 run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose)
