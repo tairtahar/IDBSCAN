@@ -8,7 +8,6 @@ import os
 from scipy.spatial.distance import pdist, squareform
 
 
-# from sklearn.neighbors import BallTree, KDTree
 class DensityGeneral:
     def __init__(self, data, eps, minpts, tau, save_flag, path):
         """L is a list that contains indices of the leaders in the data
@@ -64,7 +63,6 @@ class DensityGeneral:
             print("leaders found ", str(len(self.L)))
         self.num_leaders = len(self.L)
         self.validate_F_contains_all()
-        # return L, F
 
     def neighbors_labeling(self, S, d_idx, cluster):
         addition_temp = []
@@ -78,8 +76,6 @@ class DensityGeneral:
                     NN = self.tree.query_radius(self.S_data[q_idx].reshape(1, -1), r=self.eps)[0]
                 else:
                     NN = self.find_neighbors_in_radius(q_idx)
-                # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
-                # NN = np.asarray(idx_NN[0])
                 if NN.shape[0] >= self.minpts:
                     addition_temp.append(NN)
         if len(addition_temp) > 0:
@@ -100,20 +96,15 @@ class DensityGeneral:
         self.leader_labels = [0] * (self.num_leaders)
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
-                # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
-                # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
-                # of the samples in the radius eps around current
+                # finds the indices of the samples in the radius eps around current
                 self.tree = KDTree(self.S_data)
                 NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
-                # sample
-                # NN = np.asarray(idx_NN[0])
                 if NN.shape[0] < self.minpts:
                     self.leader_labels[d_idx] = -1  # labels as noise
                 else:
                     cluster += 1
                     self.leader_labels[d_idx] = cluster
                     S = NN.copy()
-                    # S = S.astype(int)
                     S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
                     addition = self.neighbors_labeling(S, d_idx, cluster)
                     while len(addition) > 0:
@@ -345,8 +336,6 @@ def main_IDBSCAN(df, eps, minpts, tau, save_flag, path, flag_neig_calc, verbose)
     predictions = algorithm.leader_labels
     if len(predictions) != len(S):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
-    # prediction_leaders = algorithm.leader_labels[
-    #                      0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
     labels = algorithm.passing_predictions(labels)
     algorithm.labels = labels
     return labels
@@ -361,9 +350,6 @@ def neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
         if labels[q_idx] == 0:  # meaning label q is undefined
             labels[q_idx] = cluster
             NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
-
-            # idx_NN = neigh.radius_neighbors(D[q_idx].reshape(1, D[d_idx].size), return_distance=False)
-            # NN = np.asarray(idx_NN[0])
             if NN.shape[0] >= minpts:
                 addition_temp.append(NN)
     if len(addition_temp) > 0:
@@ -379,20 +365,14 @@ def DBSCAN(D, eps, minpts):
     labels = [0] * len(D)
     for d_idx in range(len(D)):
         if labels[d_idx] == 0:
-            # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
-            # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
-            # of the samples in the radius eps around current
             tree = KDTree(D)
             NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
-            # sample
-            # NN = np.asarray(idx_NN[0])
             if NN.shape[0] < minpts:
                 labels[d_idx] = -1  # labels as noise
             else:
                 cluster += 1
                 labels[d_idx] = cluster
                 S = NN.copy()
-                # S = S.astype(int)
                 S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
                 labels, addition = neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
                 while len(addition) > 0:
