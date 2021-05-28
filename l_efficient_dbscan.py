@@ -17,8 +17,8 @@ class LDBSCAN:
         self.knn_seq = None  # int [][]
         self.clustering_sequence = []  # arraylist
 
-    def runLDBSCAN(self, filename, MinPts_LOF, MinPts_LDBSCAN, core_lof, pct):
-        self.loadData(filename)
+    def runLDBSCAN(self, MinPts_LOF, MinPts_LDBSCAN, core_lof, pct):
+        self.loadData()
         start_time = time.time()
         self.calculateDistance(max(MinPts_LOF, MinPts_LDBSCAN))
         end_time = time.time()
@@ -27,18 +27,19 @@ class LDBSCAN:
         self.calculateLOF(MinPts_LOF);
         self.clustering(MinPts_LDBSCAN, core_lof, pct);
 
-    def loadData(self, filename):
-        df, true_class = utils.load_preprocess_letters()
-        f = filename
-        for data in f.readlines():
-            record = []
-            attributes = data.split(",")
-            # this part can be optimized as record = data.split(",")
-            for i in np.arange(len(attributes)):
-                record.append(float(attributes[i]))
-            self.records.append(record)
+    def loadData(self):
+        df, true_class = utils.load_preprocess_abalone()
+        # f = filename
+        # for data in f.readlines():
+        #     record = []
+        #     attributes = data.split(",")
+        #     # this part can be optimized as record = data.split(",")
+        #     for i in np.arange(len(attributes)):
+        #         record.append(float(attributes[i]))
+        #     self.records.append(record)
 
-        f.close()
+        # f.close()
+        self.records = np.asarray(df)
 
     def calculateDistance(self, MinPts):
         n = len(self.records)  # number of records
@@ -249,9 +250,9 @@ class Quicksort:
             return sequence
 
 
-if __name__ == "__ldbscan__":
-    tmp = LDBSCAN()
-    if len(sys.argv) != 5:
-        tmp.runLDBSCAN("sampleData.csv", 15, 10, 2, 0.2)
-    else:
-        tmp.runLDBSCAN(sys.argv[0], int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
+# if __name__ == "__dbscan__":
+tmp = LDBSCAN()
+if len(sys.argv) != 5:
+    tmp.runLDBSCAN(15, 10, 2, 0.2)
+else:
+    tmp.runLDBSCAN(sys.argv[0], int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
