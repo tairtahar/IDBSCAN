@@ -30,11 +30,13 @@ class DensityGeneral:
         self.outliers = []
         self.tree = []
         self.leader_labels = []
-        self.save_flag = save_flag
-        self.path = path
         self.S_data = []  # that is partial data, the data of the leaders/leaders+addition for IDBSCAN
         self.S_idx = []
         self.neighbor_calc = 1  # default 1 which calculation with sklearn kdtree. otherwise use dist_map
+        # Administrative:
+        self.save_flag = save_flag
+        self.path = path
+        self.verbose = False
 
     def leader(self):
         self.L = [0]  # list of all idices of the leaders
@@ -57,8 +59,9 @@ class DensityGeneral:
             if leader:
                 self.L.append(curr_idx)
                 self.F_parallel[curr_idx].append(curr_idx)
-        print("leader algo is Done")
-        print("leaders found ", str(len(self.L)))
+        if self.verbose:
+            print("leader algo is Done")
+            print("leaders found ", str(len(self.L)))
         self.num_leaders = len(self.L)
         self.validate_F_contains_all()
         # return L, F
@@ -89,9 +92,7 @@ class DensityGeneral:
     def find_neighbors_in_radius(self, idx):
         row_distances = self.find_row(idx, self.S_idx)
         idx_neighbors_S = np.where(np.asarray(row_distances) <= self.eps)
-        # temp_list = self.S_idx.copy()
         idx_neighbors = np.array(self.S_idx)[idx_neighbors_S]
-        # [temp_list[item] for item in idx_neighbors_S]
         return idx_neighbors
 
     def DBSCAN(self):
@@ -170,7 +171,7 @@ class DensityGeneral:
             not_claffified = [i for i, e in enumerate(check_vec) if e == 0]
             print(not_claffified)
             raise ValueError(str(len(not_claffified)), ' elements were not classified')
-        else:
+        elif self.verbose:
             print("all followers were assinged to at least one leader")
 
 
@@ -222,7 +223,8 @@ class DensityAsterisk(DensityGeneral):
             if leader:
                 self.F_parallel[curr_idx].append(curr_idx)
                 self.L.append(curr_idx)
-        print("leader* first iteration on data Done")
+        if self.verbose:
+            print("leader* first iteration on data Done")
         flag = False
         outliers = []
         for d_idx in range(self.m):
@@ -232,9 +234,9 @@ class DensityAsterisk(DensityGeneral):
                     self.F[l_idx].append(d_idx)
                     flag = True
             if not flag:
-                print(d_idx)
                 outliers.append(d_idx)
-        print("leader* complete")
+        if self.verbose:
+            print("leader* complete")
         self.num_leaders = len(self.L)
         self.outliers = outliers
         self.validate_F_contains_all()
@@ -252,7 +254,7 @@ class DensityAsterisk(DensityGeneral):
             clean_s = [item for item in s if item not in S]
             self.followers_not_leaders.extend(clean_s)
             S.extend(clean_s)
-            if l_idx % 500 == 0:
+            if l_idx % 500 == 0 and self.verbose:
                 print("IDBSCAN sample " + str(l_idx) + " out of " + str(self.num_leaders))
         self.num_followers_not_leaders = len(self.followers_not_leaders)
         return S
@@ -266,7 +268,6 @@ class DensityAsterisk(DensityGeneral):
             intersection = list(set(self.F[l1]) & set(self.F[l2]))
             s.extend(intersection)
         s_final = list(set(s))
-        # print("intersection calculation complete")
         return list(set(s_final))
 
     def FFT_sampling(self, s):
@@ -320,17 +321,19 @@ class DensityAsterisk(DensityGeneral):
                         addition = self.neighbors_labeling(addition, d_idx, cluster)
 
 
-def main_IDBSCAN(df, eps, minpts, tau, save_flag, path, flag_neig_calc):
+def main_IDBSCAN(df, eps, minpts, tau, save_flag, path, flag_neig_calc, verbose):
     data = np.asarray(df)
     labels = [0] * len(data)
     algorithm = DensityAsterisk(data, eps, minpts, tau, save_flag, path, flag_neig_calc)
-
-    # data should be ndarray
+    algorithm.verbose = verbose
     algorithm.leader_asterisk()
-    print("leaders list contains", len(algorithm.L))
+    if verbose:
+        print("leaders list contains", len(algorithm.L))
     S = algorithm.IDBSCAN()
-    print("Intersection followers list contains", len(algorithm.followers_not_leaders))
-    print("All samples to be processed list contains", len(S))
+    if verbose:
+        print("Intersection followers list contains", len(algorithm.followers_not_leaders))
+        print("All samples to be processed list contains", len(S))
+    # precautions and validations:
     if len(S) - algorithm.num_followers_not_leaders != algorithm.num_leaders:
         raise ValueError('S != sum length of leaders and intersections')
     if len(S) - algorithm.num_followers_not_leaders != algorithm.num_leaders:
@@ -342,8 +345,8 @@ def main_IDBSCAN(df, eps, minpts, tau, save_flag, path, flag_neig_calc):
     predictions = algorithm.leader_labels
     if len(predictions) != len(S):
         raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
-    prediction_leaders = algorithm.leader_labels[
-                         0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
+    # prediction_leaders = algorithm.leader_labels[
+    #                      0:algorithm.num_leaders]  # the first in the list are the prediction of the leaders.
     labels = algorithm.passing_predictions(labels)
     algorithm.labels = labels
     return labels
