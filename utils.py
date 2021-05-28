@@ -1,7 +1,5 @@
 from scipy.io import arff
 import numpy as np
-# from keras.utils import np_utils
-import sklearn
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -24,8 +22,7 @@ def load_preprocess_mushrooms(flag=False):
         df = categorial_handle(df, 1)
         encoder = LabelEncoder()
         true_class = encoder.fit_transform(true_class)
-        # df.info()
-    else:  # svm data
+    else:
         data, true_class = load_svmlight_file("datasets/mushrooms.txt")
         df = pd.DataFrame(data.todense())
         true_class = np.asarray(true_class)
@@ -37,7 +34,6 @@ def load_preprocess_letters(flag=False):
         df = load_csv_data("datasets/letter.csv")
         true_class = df.iloc[:, -1]
         df = df.drop(df.columns[-1], axis=1)
-        # df = categorial_handle(df, 2)  # ordinal
         encoder = LabelEncoder()
         true_class = encoder.fit_transform(true_class)
         scaler = StandardScaler()  # StandardScaler()  #
@@ -130,5 +126,4 @@ def perform_evaluation(true_class, predictions, verbose=False):
     if verbose:
         print("ARI: " + str(ARI))
     return ARI
-# for DEBUG only
-# load_data('mushroom_arff.arff')
+
