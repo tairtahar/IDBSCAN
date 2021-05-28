@@ -6,7 +6,6 @@ import time
 import hdbscan
 import sklearn
 from st_dbscan import ST_DBSCAN
-import vdbscan
 
 
 def print_separator():
@@ -85,13 +84,6 @@ def run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose_IDBSCAN)
             print_separator()
             print("For ST-DBSCAN:")
 
-        elif algo == "vdbscan":
-            alg = vdbscan.VDBSCAN()
-            alg.fit(df, eps_0=eps, verbose=True)
-            predictions = alg.labels_
-            print_separator()
-            print("For V-DBSCAN")
-
         elif algo == "leader":
             leader_dbscan = algorithms.DensityGeneral(np.asarray(df), eps, minpts, tau, flag_save, path)
             leader_dbscan.verbose = verbose
@@ -112,7 +104,7 @@ def run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose_IDBSCAN)
 algos = ["IDBSCAN", "DBSCAN", "stdbscan", "hdbscan", "leader"]  # "vdbscan",
 datasets = ["abalone", "mushroom", "pendigit", "letter", "cadata", "sensorless", "shuttle"]
 # algos = ["IDBSCAN", "DBSCAN", "leader"]
-data_name = datasets[0]  # possible datasets:
+data_name = datasets[2]  # possible datasets:
 flag_calc_neig = 1  # 1 uses sklearn KDtree and 0 uses distance matrix calculated by leader* alg (pdist).
 flag_save = 1  # to save the labels outputs
 path = "Results/results_mushrooms"  # where to save in case flag_save==1. Make sure the path exists.
