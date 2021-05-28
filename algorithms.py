@@ -1,9 +1,6 @@
 import numpy as np
-import utils
-import random
 from sklearn.neighbors import NearestNeighbors, KDTree
 from random import sample
-import pandas as pd
 import os
 from scipy.spatial.distance import pdist, squareform
 
