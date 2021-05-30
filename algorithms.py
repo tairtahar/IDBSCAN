@@ -91,10 +91,10 @@ class DensityGeneral:
     def DBSCAN(self):
         cluster = 0
         self.leader_labels = [0] * (self.num_leaders)
+        self.tree = KDTree(self.S_data)
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
                 # finds the indices of the samples in the radius eps around current
-                self.tree = KDTree(self.S_data)
                 NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
                 if NN.shape[0] < self.minpts:
                     self.leader_labels[d_idx] = -1  # labels as noise
@@ -301,6 +301,7 @@ class IDBSCAN(DensityGeneral):
 
     def DBSCAN(self):
         cluster = 0
+        self.tree = KDTree(self.S_data)
         self.leader_labels = [0] * (self.num_leaders + self.num_followers_not_leaders)
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
@@ -308,7 +309,6 @@ class IDBSCAN(DensityGeneral):
                 # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
                 # of the samples in the radius eps around current
                 if self.neighbor_calc:
-                    self.tree = KDTree(self.S_data)
                     NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
                 else:
                     NN = self.find_neighbors_in_radius(d_idx)
@@ -326,7 +326,7 @@ class IDBSCAN(DensityGeneral):
 
     def fit(self, df):
         data = np.asarray(df)
-        self.update_data(df)
+        self.update_data(data)
         # labels = [0] * len(data)
         self.leader_asterisk()
         if self.verbose:
@@ -342,7 +342,7 @@ class IDBSCAN(DensityGeneral):
             raise ValueError('S != sum length of leaders and intersections')
         # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
         self.S_idx = S
-        self.S_data = np.asarray(self.data.iloc[S])
+        self.S_data = np.asarray(self.data[S])
         self.DBSCAN()
         predictions = self.leader_labels
         if len(predictions) != len(S):
@@ -374,9 +374,9 @@ class DBSCAN_manual:
         self.update_data(np.asarray(D))
         cluster = 0
         self.labels_ = [0] * self.m
+        self.tree = KDTree(self.data)
         for d_idx in range(self.m):
             if self.labels_[d_idx] == 0:
-                self.tree = KDTree(self.data)
                 NN = self.tree.query_radius(self.data[d_idx].reshape(1, -1), r=self.eps)[0]
                 if NN.shape[0] < self.minpts:
                     self.labels_[d_idx] = -1  # labels as noise
@@ -412,47 +412,3 @@ class DBSCAN_manual:
         self.fit(D)
         return self.labels_
 
-
-
-
-
-
-
-
-# def neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
-#     addition_temp = []
-#     addition_out = []
-#     for q_idx in S:  # handle of the nearest neighbors
-#         if labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
-#             labels[q_idx] = cluster
-#         if labels[q_idx] == 0:  # meaning label q is undefined
-#             labels[q_idx] = cluster
-#             NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
-#             if NN.shape[0] >= minpts:
-#                 addition_temp.append(NN)
-#     if len(addition_temp) > 0:
-#         addition_temp = np.concatenate(addition_temp).ravel().tolist()
-#         addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
-#         addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
-#
-#     return labels, addition_out
-#
-#
-# def DBSCAN(D, eps, minpts):
-#     cluster = 0
-#     labels = [0] * len(D)
-#     for d_idx in range(len(D)):
-#         if labels[d_idx] == 0:
-#             tree = KDTree(D)
-#             NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
-#             if NN.shape[0] < minpts:
-#                 labels[d_idx] = -1  # labels as noise
-#             else:
-#                 cluster += 1
-#                 labels[d_idx] = cluster
-#                 S = NN.copy()
-#                 S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
-#                 labels, addition = neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
-#                 while len(addition) > 0:
-#                     labels, addition = neighbors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
-#     return labels
