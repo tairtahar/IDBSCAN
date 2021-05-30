@@ -1,5 +1,5 @@
 import utils
-import algorithms
+from algorithms import DBSCAN_manual, IDBSCAN, DensityGeneral
 import numpy as np
 from sklearn.cluster import DBSCAN
 import time
@@ -60,40 +60,39 @@ def run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose_IDBSCAN)
         start = time.time()
 
         if algo == "IDBSCAN":
-            predictions = algorithms.main_IDBSCAN(df, eps, minpts, tau, flag_save, path, flag_calc_neig,
-                                                  verbose_IDBSCAN)
             print_separator()
             print("For my IDBSCAN:")
+            clustering = IDBSCAN(eps, minpts, tau, flag_save, path, flag_calc_neig,
+                                 verbose_IDBSCAN).fit(df)
+            predictions = clustering.labels_
+            # predictions = IDBSCAN(eps, minpts, tau, flag_save, path, flag_calc_neig, verbose_IDBSCAN).fit_predict(df)
 
         elif algo == "DBSCAN":
-            predictions = algorithms.DBSCAN(np.asarray(df), eps, minpts)
             print_separator()
             print("For my DBSCAN:")
+            clustering = DBSCAN_manual(eps, minpts).fit(df)
+            predictions = clustering.labels_
+            # predictions = DBSCAN_manual(eps, minpts).fit_predict(df)
 
         elif algo == "hdbscan":
-            clusterer = hdbscan.HDBSCAN(min_samples=minpts, cluster_selection_epsilon=eps)
-            predictions = clusterer.fit(df).labels_
             print_separator()
             print("For HDBSCAN:")
+            clusterer = hdbscan.HDBSCAN(min_samples=minpts, cluster_selection_epsilon=eps)
+            predictions = clusterer.fit(df).labels_
 
         elif algo == "stdbscan":
+            print_separator()
+            print("For ST-DBSCAN:")
             st_dbscan = ST_DBSCAN(eps1=eps, eps2=eps, min_samples=minpts)
             # st_dbscan.fit_frame_split(df, frame_size=100)
             st_dbscan.fit(df)
             predictions = st_dbscan.labels
-            print_separator()
-            print("For ST-DBSCAN:")
 
         elif algo == "leader":
-            leader_dbscan = algorithms.DensityGeneral(np.asarray(df), eps, minpts, tau, flag_save, path)
-            leader_dbscan.verbose = verbose
-            leader_dbscan.leader()
-            leader_dbscan.S_data = leader_dbscan.data[leader_dbscan.L]
-            leader_dbscan.DBSCAN()
-            labels = [0] * len(df)  # place holder
-            predictions = leader_dbscan.passing_predictions(labels)
             print_separator()
             print("For my Leader:")
+            clustering = DensityGeneral(eps, minpts, tau, flag_save, path, verbose).fit(np.asarray(df))
+            predictions = clustering.labels_
 
         end = time.time()
         time_elapsed = end - start
@@ -101,13 +100,12 @@ def run_main(algos, data_name, flag_calc_neig, flag_save, path, verbose_IDBSCAN)
         utils.perform_evaluation(predictions_ref, predictions, True)
 
 
-algos = ["IDBSCAN", "DBSCAN", "stdbscan", "hdbscan", "leader"]  # "vdbscan",
+algos = ["IDBSCAN", "DBSCAN", "stdbscan", "hdbscan"]  # , "leader" # "vdbscan",
 datasets = ["abalone", "mushroom", "pendigit", "letter", "cadata", "sensorless", "shuttle"]
-# algos = ["IDBSCAN", "DBSCAN", "leader"]
-data_num = 1
+data_num = 0
 flag_calc_neig = 1  # 1 uses sklearn KDtree and 0 uses distance matrix calculated by leader* alg (pdist).
 flag_save = 1  # to save the labels outputs
-path = "Results/results_mushrooms"  # where to save in case flag_save==1. Make sure the path exists.
+path = "Results/shuttle"  # where to save in case flag_save==1. Make sure the path exists.
 verbose = False
 data_name = datasets[data_num]
 
