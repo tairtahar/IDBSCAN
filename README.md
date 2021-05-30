@@ -10,7 +10,6 @@ The main steps of IDBSCAN full applications are the following:
 To execute the code go to main.py and adjust the parameters as you wish:
 1. Choose number for dataset to use from the following possible: "abalone" - 0, "mushroom" - 1, "pendigit" - 2, "letter" - 3, "cadata" - 4, "sensorless" - 5, "shuttle" - 6.
 2. Which algorithms you would wish to execute. It is possible to execute all of them at once: "IDBSCAN", "DBSCAN", "stdbscan", "hdbscan", "leader". 
-3. flag_calc_neig - choose 1 for using the calculation of the neighboors using KDtree or 0 to choose the manual access to the distance matrix created by the leader.
-4. flag_save if you wish to save the clustering of IDBSCAN to txt file.
-5. path - in case of flag_save == True.
-6. verbose - True if you are interested in seing more detailed results/tracking the execution details.
+3. flag_save if you wish to save the clustering of IDBSCAN to txt file.
+4. path - in case of flag_save == True.
+5. verbose - True if you are interested in seing more detailed results/tracking the execution details.
