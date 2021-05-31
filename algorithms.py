@@ -3,6 +3,7 @@ from sklearn.neighbors import NearestNeighbors, KDTree
 from random import sample
 import os
 from scipy.spatial.distance import pdist, squareform
+import operator
 
 
 class DensityGeneral:
@@ -204,6 +205,8 @@ class IDBSCAN(DensityGeneral):
         self.num_followers_not_leaders = 0
         self.neighbor_calc = flag_neig_calc
         self.verbose = verbose
+        self.flag_square = True
+        self.dist_mat_square = []
 
 
     def update_data(self, df):
@@ -217,11 +220,16 @@ class IDBSCAN(DensityGeneral):
         self.F_parallel[0].append(0)
         # list of lists, in the order of L, contains indices of the population represented by the same order element of L
         self.dist_mat = pdist(self.data)
+        self.dist_mat_square = squareform(self.dist_mat)
+        flag_square = 1
         for d_idx in range(self.m - 1):  # len(D[1:])
             curr_idx = d_idx + 1  # since we start with 1 insead of zero
             leader = True
             for l_idx in range(len(self.L)):
-                curr_dist = self.find_specific_dist(curr_idx, self.L[l_idx])
+                if flag_square:
+                    curr_dist = self.dist_mat_square[curr_idx][self.L[l_idx]]
+                else:
+                    curr_dist = self.find_specific_dist(curr_idx, self.L[l_idx])
                 if curr_dist <= self.tau:
                     self.F_parallel[self.L[l_idx]].append(curr_idx)  # the original leader output
                     leader = False
@@ -235,7 +243,10 @@ class IDBSCAN(DensityGeneral):
         outliers = []
         for d_idx in range(self.m):
             for l_idx in self.L:
-                curr_dist = self.find_specific_dist(d_idx, l_idx)
+                if flag_square:
+                    curr_dist = self.dist_mat_square[d_idx][l_idx]
+                else:
+                    curr_dist = self.find_specific_dist(d_idx, l_idx)
                 if curr_dist <= self.eps:
                     self.F[l_idx].append(d_idx)
                     flag = True
@@ -282,12 +293,24 @@ class IDBSCAN(DensityGeneral):
         s_copy = s.copy()
         current_idx = sample(range(len(s)), 1)[0]
         fft_out.append(s_copy[current_idx])
+        filter_col_indx = s_copy
+        getter = operator.itemgetter(*filter_col_indx)
+        partial_distances = [list(getter(row)) for row in self.dist_mat_square]  # new
+        partial_marix = list(getter(partial_distances))
         while len(set(fft_out)) < self.minpts:
-            row_distances = self.find_row(current_idx,
-                                          s_copy)  # this isolate the row of the specific instance in the distance matrix
-            if len(set(row_distances)) <= self.minpts - len(set(fft_out)):
+            # dist = np.mean([self.data[fft_out[i]] for i in fft_out])
+            # row_distances = self.find_row(current_idx,
+            #                               s_copy)  # this isolate the row of the specific instance in the distance matrix
+            row_distances = partial_marix[current_idx]
+            if len(set(row_distances)) <= self.minpts - len(set(fft_out)):  # in case that row dist is less or equal
+                # length to output - take it all
                 fft_out.extend(s_copy[0:self.minpts - len(set(fft_out))])
                 return fft_out
+            dist = np.mean([self.data[i] for i in fft_out], 0)
+            for i in np.argsort(dist)[::-1]:
+                if i not in fft_out:
+                    fft_out.append(i)
+                    break
             farthest_idx_s = np.argmax(row_distances)
             fft_out.append(s_copy[farthest_idx_s])
             del s_copy[current_idx]
@@ -295,8 +318,9 @@ class IDBSCAN(DensityGeneral):
                 current_idx = farthest_idx_s - 1  # in case the deleted item is former, we need to -1 the latter items.
             else:
                 current_idx = farthest_idx_s
-            # dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
-            # dist_mat[farthest_idx_s][current_idx] = 0
+            # self.dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again  #new
+            # self.dist_mat[farthest_idx_s][current_idx] = 0  # new
+            # current_idx = farthest_idx_s
         return fft_out
 
     def DBSCAN(self):
@@ -318,6 +342,7 @@ class IDBSCAN(DensityGeneral):
                 else:
                     cluster += 1
                     self.leader_labels[d_idx] = cluster
+
                     S = NN.copy()
                     S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
                     addition = self.neighbors_labeling(S, d_idx, cluster)
