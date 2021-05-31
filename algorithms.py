@@ -338,8 +338,6 @@ class IDBSCAN(DensityGeneral):
         # precautions and validations:
         if len(S) - self.num_followers_not_leaders != self.num_leaders:
             raise ValueError('S != sum length of leaders and intersections')
-        if len(S) - self.num_followers_not_leaders != self.num_leaders:
-            raise ValueError('S != sum length of leaders and intersections')
         # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
         self.S_idx = S
         self.S_data = np.asarray(self.data.iloc[S])

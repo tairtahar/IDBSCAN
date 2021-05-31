@@ -82,20 +82,6 @@ def load_preprocess_shuttle():
     return df, true_class
 
 
-def load_preprocess_seismic():
-    data, true_class = load_svmlight_file("datasets/seismic.bz2")
-    df = pd.DataFrame(data.todense())
-    true_class = np.asarray(true_class)
-    return df, true_class
-
-
-def load_preprocess_skin_nonskin():
-    data, true_class = load_svmlight_file("datasets/skin_nonskin.txt")
-    df = pd.DataFrame(data.todense())
-    true_class = np.asarray(true_class)
-    return df, true_class
-
-
 def load_csv_data(file_name: str):
     data = pd.read_csv(file_name, delimiter=",")
     return data
