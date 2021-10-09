@@ -1,5 +1,5 @@
 # IDBSCAN
-This is an implementation of IDBSAN which stands for Intersection DBSCAN. Before applying DBSCAN we locate the leaders with the improved leader* algorithm. 
+This is an implementation of IDBSAN which stands for Intersection DBSCAN. Before applying DBSCAN we locate the leaders with the improved leader* algorithm. The goal of this approach is to reduce DBSCAN algorithm complexity by running it on reduced set of samples that are the representatives of the whole dataset. 
 The main steps of IDBSCAN full applications are the following:
 1. Apply Leader* to find the leaders and their corresponding followers, while allowing more than one leader to each example.
 2. Apply a sampling of the intersected samples so that a dense leader in the original data will remain dense in the created sub-data. 
@@ -13,3 +13,5 @@ To execute the code go to main.py and adjust the parameters as you wish:
 3. flag_save if you wish to save the clustering of IDBSCAN to txt file.
 4. path - in case of flag_save == True.
 5. verbose - True if you are interested in seing more detailed results/tracking the execution details.
+
+PLEASE approach the "Report" for deeper explanations on each of the algorithms, their implementations and eventually the results. 
