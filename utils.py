@@ -107,9 +107,13 @@ def l2norm(v1, v2):
     # return ((v1 - v2) ** 2).sum()
     return np.linalg.norm(v1 - v2, ord=2)
 
+
 def perform_evaluation(true_class, predictions, verbose=False):
     ARI = adjusted_rand_score(true_class, predictions)
     if verbose:
         print("ARI: " + str(ARI))
     return ARI
 
+
+def print_separator():
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")

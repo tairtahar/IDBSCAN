@@ -9,9 +9,9 @@ class DensityGeneral:
     def __init__(self, eps, minpts, tau, save_flag, path, verbose):
         """L is a list that contains indices of the leaders in the data
         F is a list in the length of the data that contains the followers of each example
-        For leader l, its follwers exist in the list F[l]
+        For leader l, its followers exist in the list F[l]
         The elements that are not leader will have their list in F empty"""
-        self.data = []
+        self.data = np.array([])
         self.m = 0
         self.dist_mat = []
         self.eps = eps
@@ -26,10 +26,10 @@ class DensityGeneral:
         self.outliers = []
         self.tree = []
         self.leader_labels = []
-        self.S_data = []  # that is partial data, the data of the leaders/leaders+addition for IDBSCAN
+        self.S_data = np.array([])   # that is subset data, the data of the leaders/leaders+addition for IDBSCAN
         self.S_idx = []
         self.neighbor_calc = 1  # default 1 which calculation with sklearn kdtree. otherwise use dist_map
-        # Administrative:
+
         self.save_flag = save_flag
         self.path = path
         self.verbose = verbose
@@ -43,12 +43,10 @@ class DensityGeneral:
         # list of lists, in the order of L, contains indices of the population represented by the same order element
         # of L
         for d_idx in range(self.m - 1):  # from index 1 till the end
-            # for d_idx in range(300):
             curr_idx = d_idx + 1
             leader = True
             for l_idx in range(len(self.L)):
                 if self.find_specific_dist(self.L[l_idx], curr_idx) <= self.tau:
-                    # if utils.l2norm(D[L[l_idx]], D[curr_idx]) <= tau:
                     self.F_parallel[self.L[l_idx]].append(curr_idx)
                     leader = False
                     break
@@ -148,8 +146,6 @@ class DensityGeneral:
             not_labeled = [i for i, e in enumerate(self.labels_) if e == 0]
             print(not_labeled)
             raise ValueError(str(len(not_labeled)), ' elements were not classified')
-        # self.labels_ = labels
-        # return labels
 
     def validate_F_contains_all(self):
         check_vec = [0] * self.m
@@ -164,25 +160,25 @@ class DensityGeneral:
             print("all followers were assinged to at least one leader")
 
     def update_data(self, df):
-        self.data = df
+        self.data = np.asarray(df)
         self.m = len(df)
 
     def fit(self, df):
         self.update_data(df)
         self.leader()
-        self.S_data =self.data[self.L]
+        self.S_data = self.data[self.L]
         self.DBSCAN()
         self.passing_predictions()
         return self
 
 
 class IDBSCAN(DensityGeneral):
-    def __init__(self, eps, minpts, tau, save_flag, path, flag_neig_calc=1, verbose = False):
+    def __init__(self, eps, minpts, tau, save_flag, path, flag_neig_calc=1, verbose=False):
         """L is a list that contains indices of the leaders in the data
         F is a list in the length of the data that contains the followers of each example
         For leader l, its follwers exist in the list F[l]
         The elements that are not leader will have their list in F empty"""
-        self.data = []
+        self.data = np.array([])
         self.m = 0
         self.dist_mat = []
         self.eps = eps
@@ -192,30 +188,24 @@ class IDBSCAN(DensityGeneral):
         self.num_leaders = 0
         self.F = []
         self.F_parallel = []
-        self.labels_ = []  # [0] * self.m
+        self.labels_ = []
         self.outliers = []
         self.tree = []
         self.leader_labels = []
         self.save_flag = save_flag
         self.path = path
         self.S_idx = []
-        self.S_data = []
+        self.S_data = np.array([])
         self.followers_not_leaders = []
         self.num_followers_not_leaders = 0
         self.neighbor_calc = flag_neig_calc
         self.verbose = verbose
-
-
-    def update_data(self, df):
-        self.data = df
-        self.m = len(df)
 
     def leader_asterisk(self):
         self.L = [0]  # list of all idices of the leaders. Initialized with the first index
         self.F = [[] for _ in range(len(self.data))]
         self.F_parallel = [[] for _ in range(len(self.data))]
         self.F_parallel[0].append(0)
-        # list of lists, in the order of L, contains indices of the population represented by the same order element of L
         self.dist_mat = pdist(self.data)
         for d_idx in range(self.m - 1):  # len(D[1:])
             curr_idx = d_idx + 1  # since we start with 1 insead of zero
@@ -248,8 +238,7 @@ class IDBSCAN(DensityGeneral):
         self.validate_F_contains_all()
 
     def IDBSCAN_sampling(self):
-        S = self.L.copy()  # make sure this is a copy of the L list
-
+        S = self.L.copy()
         for l_idx in range(self.num_leaders):
             s = self.find_interesect_followers(l_idx)
             if len(self.F[self.L[l_idx]]) > self.minpts:
@@ -284,7 +273,8 @@ class IDBSCAN(DensityGeneral):
         fft_out.append(s_copy[current_idx])
         while len(set(fft_out)) < self.minpts:
             row_distances = self.find_row(current_idx,
-                                          s_copy)  # this isolate the row of the specific instance in the distance matrix
+                                          s_copy)  # this isolate the row of the specific instance in the distance
+            # matrix
             if len(set(row_distances)) <= self.minpts - len(set(fft_out)):
                 fft_out.extend(s_copy[0:self.minpts - len(set(fft_out))])
                 return fft_out
@@ -295,8 +285,6 @@ class IDBSCAN(DensityGeneral):
                 current_idx = farthest_idx_s - 1  # in case the deleted item is former, we need to -1 the latter items.
             else:
                 current_idx = farthest_idx_s
-            # dist_mat[current_idx][farthest_idx_s] = 0  # making sure we do not add this idx again
-            # dist_mat[farthest_idx_s][current_idx] = 0
         return fft_out
 
     def DBSCAN(self):
@@ -304,9 +292,7 @@ class IDBSCAN(DensityGeneral):
         self.leader_labels = [0] * (self.num_leaders + self.num_followers_not_leaders)
         for d_idx in range(len(self.S_data)):
             if self.leader_labels[d_idx] == 0:
-                # NN = NearestNeighbors(D, d_idx, eps) neigh = NearestNeighbors(radius=eps) neigh.fit(D) idx_NN =
-                # neigh.radius_neighbors(D[d_idx].reshape(1, D[d_idx].size), return_distance=False)  # finds the indices
-                # of the samples in the radius eps around current
+                # finds the indices of the samples in the radius eps around current
                 if self.neighbor_calc:
                     self.tree = KDTree(self.S_data)
                     NN = self.tree.query_radius(self.S_data[d_idx].reshape(1, -1), r=self.eps)[0]
@@ -325,9 +311,7 @@ class IDBSCAN(DensityGeneral):
                         addition = self.neighbors_labeling(addition, d_idx, cluster)
 
     def fit(self, df):
-        data = np.asarray(df)
         self.update_data(df)
-        # labels = [0] * len(data)
         self.leader_asterisk()
         if self.verbose:
             print("leaders list contains", len(self.L))
@@ -340,14 +324,12 @@ class IDBSCAN(DensityGeneral):
             raise ValueError('S != sum length of leaders and intersections')
         # S contains the results of IDBSCAN - indices of the leaders (len = L) + indices of inersections (len=S-L)
         self.S_idx = S
-        self.S_data = np.asarray(self.data.iloc[S])
+        self.S_data = np.asarray(self.data[S])
         self.DBSCAN()
         predictions = self.leader_labels
         if len(predictions) != len(S):
             raise ValueError('prediction list contains', str(len(predictions)), 'while S list contains', str(len(S)))
-        # labels = self.passing_predictions(labels)
         self.passing_predictions()
-        # self.labels_ = labels
         return self
 
     def fit_predict(self, df):
@@ -359,13 +341,13 @@ class DBSCAN_manual:
     def __init__(self, eps, minpts):
         self.eps = eps
         self.minpts = minpts
-        self.data = []
+        self.data = np.array([])
         self.labels_ = []
         self.m = 0
         self.tree = []
 
     def update_data(self, df):
-        self.data = df
+        self.data = np.asarray(df)
         self.m = len(df)
 
     def fit(self, D):
@@ -410,47 +392,3 @@ class DBSCAN_manual:
         self.fit(D)
         return self.labels_
 
-
-
-
-
-
-
-
-# def neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts):
-#     addition_temp = []
-#     addition_out = []
-#     for q_idx in S:  # handle of the nearest neighbors
-#         if labels[q_idx] == -1:  # in case it was labeled as noise - label as cluster
-#             labels[q_idx] = cluster
-#         if labels[q_idx] == 0:  # meaning label q is undefined
-#             labels[q_idx] = cluster
-#             NN = tree.query_radius(D[q_idx].reshape(1, -1), r=eps)[0]
-#             if NN.shape[0] >= minpts:
-#                 addition_temp.append(NN)
-#     if len(addition_temp) > 0:
-#         addition_temp = np.concatenate(addition_temp).ravel().tolist()
-#         addition1 = [item for item in addition_temp if item not in S]  # all elements that do not exist already in S
-#         addition_out = np.setdiff1d(addition1, np.array(d_idx))  # get rid of the current index d_idx
-#
-#     return labels, addition_out
-#
-#
-# def DBSCAN(D, eps, minpts):
-#     cluster = 0
-#     labels = [0] * len(D)
-#     for d_idx in range(len(D)):
-#         if labels[d_idx] == 0:
-#             tree = KDTree(D)
-#             NN = tree.query_radius(D[d_idx].reshape(1, -1), r=eps)[0]
-#             if NN.shape[0] < minpts:
-#                 labels[d_idx] = -1  # labels as noise
-#             else:
-#                 cluster += 1
-#                 labels[d_idx] = cluster
-#                 S = NN.copy()
-#                 S = np.setdiff1d(S, np.array(d_idx))  # get rid of the current index
-#                 labels, addition = neighbors_labeling(S, d_idx, labels, cluster, tree, D, eps, minpts)
-#                 while len(addition) > 0:
-#                     labels, addition = neighbors_labeling(addition, d_idx, labels, cluster, tree, D, eps, minpts)
-#     return labels
