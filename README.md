@@ -5,11 +5,11 @@ This is an implementation of IDBSAN which stands for Intersection DBSCAN.
 
 Density-Based Spatial Clustering of Applications with Noise is a classic clustering algorithm that has a major advantage of capturing amorphic clusters, where other clustering algorithms, such as k-means, fails. 
 
-![DBSCAN-clustering](https://github.com/tairtahar/IDBSCAN/blob/master/images/dbscan_clusters.PNG)
 
 
 
-![DBSCAN-algorithm](https://github.com/tairtahar/IDBSCAN/blob/master/images/DBSCAN_pseudo.PNG)
+![DBSCAN-algorithm](https://github.com/tairtahar/IDBSCAN/blob/master/images/DBSCAN_pseudo.PNG) ![DBSCAN-clustering](https://github.com/tairtahar/IDBSCAN/blob/master/images/dbscan_clusters.PNG)
+
 
 ### I-DBSCAN
 
