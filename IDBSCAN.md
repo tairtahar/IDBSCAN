@@ -9,7 +9,7 @@ Density-Based Spatial Clustering of Applications with Noise is a classic cluster
 
 
 
-![DBSCAN-algorithm]()
+![DBSCAN-algorithm](https://github.com/tairtahar/IDBSCAN/blob/master/images/DBSCAN_pseudo.PNG)
 
 ### I-DBSCAN
 
