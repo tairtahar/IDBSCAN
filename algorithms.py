@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.neighbors import NearestNeighbors, KDTree
+from sklearn.neighbors import KDTree
 from random import sample
 import os
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist
 
 
 class DensityGeneral:

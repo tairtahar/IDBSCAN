@@ -1,4 +1,7 @@
+![skit](https://img.shields.io/badge/scikit--learn-0.24.2-orange) ![scipy](https://img.shields.io/badge/scipy-1.5.4-lightgrey) ![pandas](https://img.shields.io/badge/pandas-1.1.5-red)
+
 # I-DBSCAN
+
 This is an implementation of IDBSAN which stands for Intersection DBSCAN. 
 
 ### DBSCAN
