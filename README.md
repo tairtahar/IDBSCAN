@@ -1,6 +1,4 @@
-![python](https://img.shields.io/badge/Python-3.6-orange)
-
-![skit](https://img.shields.io/badge/scikit--learn-0.42.2-green) ![scipy](https://img.shields.io/badge/scipy-1.5.4-lightgrey) ![pandas](https://img.shields.io/badge/pandas-1.1.5-red)
+![python](https://img.shields.io/badge/Python-3.6-orange) ![skit](https://img.shields.io/badge/scikit--learn-0.42.2-green) ![scipy](https://img.shields.io/badge/scipy-1.5.4-lightgrey) ![pandas](https://img.shields.io/badge/pandas-1.1.5-red)
 
 # I-DBSCAN
 
